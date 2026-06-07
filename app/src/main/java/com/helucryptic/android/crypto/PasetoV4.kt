@@ -36,7 +36,8 @@ object PasetoV4 {
 
     fun sign(payload: Map<String, Any>, ed25519PrivB64: String): String {
         val m   = JSONObject(payload).toString().toByteArray(Charsets.UTF_8)
-        val pae = pae(HDR_PUBLIC.toByteArray(), m, ByteArray(0))
+        // PAE: [header, message, footer="", implicit_assertion=""] — 4 pieces per PASETO v4 spec
+        val pae = pae(HDR_PUBLIC.toByteArray(), m, ByteArray(0), ByteArray(0))
         val signer = Ed25519Signer()
         signer.init(true, Ed25519PrivateKeyParameters(b64d(ed25519PrivB64), 0))
         signer.update(pae, 0, pae.size)
@@ -50,7 +51,8 @@ object PasetoV4 {
         require(raw.size > 64) { "Token too short" }
         val m   = raw.copyOf(raw.size - 64)
         val sig = raw.copyOfRange(raw.size - 64, raw.size)
-        val pae = pae(HDR_PUBLIC.toByteArray(), m, ByteArray(0))
+        // PAE: [header, message, footer="", implicit_assertion=""] — 4 pieces per PASETO v4 spec
+        val pae = pae(HDR_PUBLIC.toByteArray(), m, ByteArray(0), ByteArray(0))
         val verifier = Ed25519Signer()
         verifier.init(false, Ed25519PublicKeyParameters(b64d(ed25519PubB64), 0))
         verifier.update(pae, 0, pae.size)
