@@ -38,6 +38,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.appcompat)
+    implementation(libs.material)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
@@ -57,6 +59,7 @@ dependencies {
     implementation(libs.bouncycastle)
     implementation(libs.coroutines.android)
     implementation(libs.zxing)
+    implementation(libs.stream.webrtc)
 
     testImplementation(libs.junit5.api)
     testRuntimeOnly(libs.junit5.engine)

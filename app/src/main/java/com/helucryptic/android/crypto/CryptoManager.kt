@@ -87,7 +87,7 @@ class CryptoManager @Inject constructor() {
     /** AES-256-GCM encrypt. Output = 12-byte nonce || ciphertext+tag. */
     fun aeadEncrypt(plaintext: ByteArray, key: ByteArray): ByteArray {
         val nonce = ByteArray(12).also { rng.nextBytes(it) }
-        val cipher = GCMBlockCipher(AESEngine())
+        val cipher = GCMBlockCipher.newInstance(AESEngine.newInstance())
         cipher.init(true, AEADParameters(KeyParameter(key), 128, nonce))
         val out = ByteArray(cipher.getOutputSize(plaintext.size))
         val len = cipher.processBytes(plaintext, 0, plaintext.size, out, 0)
@@ -99,7 +99,7 @@ class CryptoManager @Inject constructor() {
     fun aeadDecrypt(ciphertext: ByteArray, key: ByteArray): ByteArray {
         val nonce = ciphertext.copyOf(12)
         val ct    = ciphertext.copyOfRange(12, ciphertext.size)
-        val cipher = GCMBlockCipher(AESEngine())
+        val cipher = GCMBlockCipher.newInstance(AESEngine.newInstance())
         cipher.init(false, AEADParameters(KeyParameter(key), 128, nonce))
         val out = ByteArray(cipher.getOutputSize(ct.size))
         val len = cipher.processBytes(ct, 0, ct.size, out, 0)

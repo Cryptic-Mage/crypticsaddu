@@ -7,6 +7,8 @@
     <application
         android:name=".HelucrypticApp"
         android:label="helucryptic"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
         android:allowBackup="false">
         <activity
