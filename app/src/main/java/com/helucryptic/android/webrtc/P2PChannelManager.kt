@@ -171,7 +171,7 @@ class P2PChannelManager @Inject constructor(
 }
 
 private open class SdpAdapter : SdpObserver {
-    override fun onCreateSuccess(p: SessionDescription?) {}
+    override fun onCreateSuccess(p: SessionDescription) {}
     override fun onSetSuccess()                          {}
     override fun onCreateFailure(e: String?)             {}
     override fun onSetFailure(e: String?)                {}
