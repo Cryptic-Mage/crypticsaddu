@@ -26,6 +26,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.zxing.BarcodeFormat
 import com.helucryptic.android.signaling.SignalingState
+import com.helucryptic.android.ui.components.AvatarCircle
+import com.helucryptic.android.ui.components.ListOrEmpty
 import com.helucryptic.android.ui.navigation.Screen
 import com.helucryptic.android.ui.theme.DarkSuccess
 import com.journeyapps.barcodescanner.BarcodeEncoder
@@ -256,17 +258,15 @@ fun ContactsScreen(nav: NavController, vm: ContactsViewModel = hiltViewModel()) 
             )
         }
     ) { padding ->
-        if (contacts.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(
-                    "No contacts yet. Connect with someone to add them.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                items(contacts) { contact ->
+        ListOrEmpty(
+            isEmpty    = contacts.isEmpty(),
+            emptyIcon  = Icons.Rounded.Group,
+            emptyTitle = "No contacts yet",
+            emptyBody  = "Use the + button to add someone by username or QR code.",
+            modifier   = Modifier.padding(padding)
+        ) {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(contacts, key = { it.username }) { contact ->
                     ListItem(
                         modifier        = Modifier
                             .clickable { nav.navigate(Screen.ContactDetail.go(contact.username)) }
@@ -279,20 +279,7 @@ fun ContactsScreen(nav: NavController, vm: ContactsViewModel = hiltViewModel()) 
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-                        leadingContent = {
-                            Surface(
-                                modifier = Modifier.size(48.dp).clip(CircleShape),
-                                color    = MaterialTheme.colorScheme.primary
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        contact.username.take(1).uppercase(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                }
-                            }
-                        },
+                        leadingContent = { AvatarCircle(username = contact.username) },
                         trailingContent = if (contact.verified) ({
                             Icon(
                                 Icons.Rounded.Verified,

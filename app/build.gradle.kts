@@ -28,6 +28,11 @@ android {
         buildConfigField("String", "TURN_URL",         "\"${localProps["HELUCRYPTIC_TURN_URL"]        ?: ""}\"")
         buildConfigField("String", "TURN_USERNAME",    "\"${localProps["HELUCRYPTIC_TURN_USERNAME"]   ?: ""}\"")
         buildConfigField("String", "TURN_PASSWORD",    "\"${localProps["HELUCRYPTIC_TURN_PASSWORD"]   ?: ""}\"")
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += mapOf("room.schemaLocation" to "$projectDir/schemas")
+            }
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
@@ -35,6 +40,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    buildTypes {
+        release {
+            isMinifyEnabled   = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
 }
 
 dependencies {

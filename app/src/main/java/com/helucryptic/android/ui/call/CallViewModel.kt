@@ -27,5 +27,5 @@ class CallViewModel @Inject constructor() : ViewModel() {
     fun toggleVideo()   { videoEnabled = !videoEnabled }
     fun toggleSpeaker() { speakerOn    = !speakerOn }
 
-    override fun onCleared() { timerJob?.cancel() }
+    override fun onCleared() { super.onCleared(); timerJob?.cancel() }
 }

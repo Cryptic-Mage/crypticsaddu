@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,8 +16,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.compose.material.icons.rounded.Share
 import com.helucryptic.android.crypto.IdentityStore
+import com.helucryptic.android.ui.components.AnimatedSendButton
 import com.helucryptic.android.ui.navigation.Screen
 import javax.inject.Inject
 
@@ -81,11 +81,7 @@ fun RoomScreen(
                         shape         = androidx.compose.foundation.shape.CircleShape
                     )
                     Spacer(Modifier.width(8.dp))
-                    FloatingActionButton(
-                        onClick        = { vm.send(roomCode) },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        modifier       = Modifier.size(48.dp)
-                    ) { Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send") }
+                    AnimatedSendButton(hasText = vm.inputText.isNotBlank(), onClick = { vm.send(roomCode) })
                 }
             }
         }
@@ -96,10 +92,10 @@ fun RoomScreen(
             contentPadding = PaddingValues(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(vm.messages) { msg ->
+            items(vm.messages, key = { it.id }) { msg ->
                 val isMe = msg.sender == myUsername
                 Column(
-                    modifier            = Modifier.fillMaxWidth(),
+                    modifier            = Modifier.fillMaxWidth().animateItem(),
                     horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
                 ) {
                     if (!isMe) {

@@ -4,6 +4,8 @@ import android.content.Context
 import com.helucryptic.android.data.datastore.AppSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.webrtc.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,6 +16,7 @@ class P2PChannelManager @Inject constructor(
     private val appSettings: AppSettings
 ) {
     private var factory: PeerConnectionFactory? = null
+    private val initMutex = Mutex()
     private var cachedIce: List<PeerConnection.IceServer> = listOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer()
@@ -30,8 +33,8 @@ class P2PChannelManager @Inject constructor(
     /** Called when data channel transitions to OPEN. */
     var onChannelOpen: ((peer: String) -> Unit)? = null
 
-    suspend fun initialize() {
-        if (factory != null) return
+    suspend fun initialize() = initMutex.withLock {
+        if (factory != null) return@withLock
         factory = PeerConnectionFactory.builder()
             .setOptions(PeerConnectionFactory.Options())
             .createPeerConnectionFactory()

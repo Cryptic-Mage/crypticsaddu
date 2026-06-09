@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.helucryptic.android.crypto.IdentityStore
+import com.helucryptic.android.ui.components.AnimatedSendButton
 import com.helucryptic.android.ui.navigation.Screen
 import javax.inject.Inject
 
@@ -91,11 +91,12 @@ fun ChatScreen(
                 contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(vm.messages) { msg ->
+                items(vm.messages, key = { it.id }) { msg ->
                     val isMe = msg.sender == myUsername
                     MessageBubble(
                         text  = msg.plaintextCache ?: "…",
-                        isMe  = isMe
+                        isMe  = isMe,
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -104,9 +105,9 @@ fun ChatScreen(
 }
 
 @Composable
-private fun MessageBubble(text: String, isMe: Boolean) {
+private fun MessageBubble(text: String, isMe: Boolean, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
     ) {
         Surface(
@@ -148,13 +149,7 @@ private fun MessageInputBar(value: String, onChange: (String) -> Unit, onSend: (
                 shape         = androidx.compose.foundation.shape.CircleShape
             )
             Spacer(Modifier.width(8.dp))
-            FloatingActionButton(
-                onClick          = onSend,
-                containerColor   = MaterialTheme.colorScheme.primary,
-                modifier         = Modifier.size(48.dp)
-            ) {
-                Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send")
-            }
+            AnimatedSendButton(hasText = value.isNotBlank(), onClick = onSend)
         }
     }
 }

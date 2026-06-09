@@ -92,11 +92,16 @@ class ConnectionManager @Inject constructor(
         connectSignaling(null)
     }
 
-    fun connectRoom(roomCode: String, psk: String) {
+    fun connectRoom(roomCode: String, psk: String, creatorUsername: String) {
         currentRoom = roomCode
         peerCount   = 0
         engine.setRoom(roomCode, psk)
         p2pManager.closeAll()
+        roomManager.reset()
+        val myUsername = identityStore.username ?: ""
+        if (myUsername.isNotEmpty() && myUsername == creatorUsername) {
+            roomManager.initAsCreator(myUsername)
+        }
         connectSignaling(roomCode)
     }
 
@@ -154,15 +159,8 @@ class ConnectionManager @Inject constructor(
                             engine.onChannelOpen(peer)
                         }
                     }
-                    "peer_left" -> {
-                        val peer = message.sender
-                        if (peer.isNotEmpty()) {
-                            peerCount = maxOf(0, peerCount - 1)
-                            if (peerCount == 0) signalingClient.onPeerDisconnected()
-                            roomManager.removeMember(peer, myUsername)
-                            engine.disconnectPeer(peer)
-                        }
-                    }
+                    // "peer_left" as a Forward is never reached — the parser returns
+                    // SignalingMessage.PeerLeft for that type, handled in the PeerLeft branch above.
                     "data_channel" -> {
                         val json = when (val d = message.data) {
                             is String     -> d

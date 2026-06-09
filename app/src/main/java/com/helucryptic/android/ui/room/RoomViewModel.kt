@@ -32,8 +32,10 @@ class RoomViewModel @Inject constructor(
 
     fun loadMessages(roomCode: String) {
         viewModelScope.launch {
-            val psk = roomRepo.getRoom(roomCode)?.psk ?: ""
-            connectionManager.connectRoom(roomCode, psk)
+            val room = roomRepo.getRoom(roomCode)
+            val psk     = room?.psk             ?: ""
+            val creator = room?.creatorUsername ?: ""
+            connectionManager.connectRoom(roomCode, psk, creator)
             msgRepo.observe(roomCode).collect {
                 messages.clear()
                 messages.addAll(it)
@@ -45,14 +47,16 @@ class RoomViewModel @Inject constructor(
         val text = inputText.trim()
         if (text.isEmpty()) return
         viewModelScope.launch {
-            engine.broadcastMessage(text)
-            msgRepo.save(
-                roomOrPeerId = roomCode,
-                sender       = identityStore.username ?: "",
-                ciphertext   = "encrypted",
-                plaintext    = text
-            )
-            inputText = ""
+            val sent = engine.broadcastMessage(text)
+            if (sent) {
+                msgRepo.save(
+                    roomOrPeerId = roomCode,
+                    sender       = identityStore.username ?: "",
+                    ciphertext   = "encrypted",
+                    plaintext    = text
+                )
+                inputText = ""
+            }
         }
     }
 

@@ -54,10 +54,11 @@ class SettingsViewModel @Inject constructor(
     val loggedOut: StateFlow<Boolean> = _loggedOut
 
     fun setUrl(url: String)               = viewModelScope.launch { settings.setSignalingUrl(url) }
-    fun setServerPassword(pw: String)     = viewModelScope.launch { settings.setServerPassword(pw) }
+    // setServerPassword/setTurnUsername/setTurnPassword are synchronous (EncryptedSharedPreferences)
+    fun setServerPassword(pw: String)     { settings.setServerPassword(pw) }
     fun setTurnUrl(url: String)           = viewModelScope.launch { settings.setTurnUrl(url) }
-    fun setTurnUsername(user: String)     = viewModelScope.launch { settings.setTurnUsername(user) }
-    fun setTurnPassword(pw: String)       = viewModelScope.launch { settings.setTurnPassword(pw) }
+    fun setTurnUsername(user: String)     { settings.setTurnUsername(user) }
+    fun setTurnPassword(pw: String)       { settings.setTurnPassword(pw) }
     fun setPortForwardEnabled(e: Boolean) = viewModelScope.launch { settings.setPortForwardEnabled(e) }
     fun setForwardedPort(port: Int)       = viewModelScope.launch { settings.setForwardedPort(port) }
     fun resetUrl()                        = viewModelScope.launch { settings.resetToDefaults() }

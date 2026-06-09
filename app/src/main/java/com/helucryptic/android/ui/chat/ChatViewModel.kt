@@ -24,8 +24,10 @@ class ChatViewModel @Inject constructor(
     var inputText by mutableStateOf("")
 
     fun loadMessages(peerId: String) {
+        // connectGlobal() starts an async WebSocket handshake; onChannelOpen() must NOT be
+        // called here — it fires only once the signaling server confirms the peer is present
+        // (via room_state / peer_joined in ConnectionManager).
         connectionManager.connectGlobal()
-        engine.onChannelOpen(peerId)
         viewModelScope.launch {
             msgRepo.observe(peerId).collect {
                 messages.clear()

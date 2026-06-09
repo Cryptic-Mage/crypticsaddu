@@ -4,12 +4,14 @@ import android.content.Context
 import com.helucryptic.android.crypto.CryptoManager
 import com.helucryptic.android.crypto.IdentityStore
 import com.helucryptic.android.crypto.PasetoV4
+import com.helucryptic.android.data.repository.ContactRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,33 +23,29 @@ class WebRtcEngine @Inject constructor(
     private val crypto: CryptoManager,
     private val identityStore: IdentityStore,
     private val roomManager: RoomManager,
-    private val p2p: P2PChannelManager
+    private val p2p: P2PChannelManager,
+    private val contactRepository: ContactRepository
 ) {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val _incoming = MutableSharedFlow<IncomingMessage>(extraBufferCapacity = 128)
     val incoming: SharedFlow<IncomingMessage> = _incoming
 
-    // Per-peer crypto state
-    private val sessionKeys   = mutableMapOf<String, ByteArray>()
-    private val myEphPriv     = mutableMapOf<String, String>()
-    private val helloVerified = mutableSetOf<String>()
+    // Per-peer crypto state — ConcurrentHashMap for safe access across coroutines
+    private val sessionKeys   = ConcurrentHashMap<String, ByteArray>()
+    private val myEphPriv     = ConcurrentHashMap<String, String>()
+    private val helloVerified: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     // PSK state
-    private var roomPsk  = ""
-    private var roomCode = ""
-    private val pendingPskNonces = mutableMapOf<String, String>()  // peer → nonce we challenged with
-    private val pskVerified      = mutableSetOf<String>()          // peers who passed our challenge
+    @Volatile private var roomPsk  = ""
+    @Volatile private var roomCode = ""
+    private val pendingPskNonces = ConcurrentHashMap<String, String>()  // peer → nonce we challenged with
+    private val pskVerified: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     // Callbacks wired by ConnectionManager
     var onPeerReady: ((username: String, ed25519Pub: String, x25519Pub: String) -> Unit)? = null
     var onKeyChange: ((String) -> Unit)? = null
     var onSendRaw:   ((peer: String, json: String) -> Unit)? = null   // relay path
-
-    init {
-        // P2P inbound messages are fed into the same frame handler as relay messages
-        p2p.onMessage = { peer, json -> scope.launch { handleFrame(peer, json) } }
-    }
 
     fun setRoom(code: String, psk: String) {
         roomCode = code
@@ -130,14 +128,52 @@ class WebRtcEngine @Inject constructor(
         if (peer in helloVerified) return
         val token      = frame.getString("token")
         val claimedPub = PasetoV4.extractClaimedEd25519Pub(token) ?: return
-        val payload    = runCatching { PasetoV4.verify(token, claimedPub) }.getOrNull() ?: return
 
-        val peerEd  = payload["ed25519_pub"]    as? String ?: return
-        val peerX   = payload["x25519_pub"]     as? String ?: return
-        val peerEph = payload["eph_x25519_pub"] as? String ?: return
-        val username = payload["username"]      as? String ?: peer
+        // ── TOFU / key-pinning ────────────────────────────────────────────────
+        // Look up the key we have stored for this peer (keyed by username == peer).
+        val storedContact = contactRepository.get(peer)
+        val storedKey     = storedContact?.ed25519Pub?.takeIf { it.isNotEmpty() }
 
-        if (peerEd != claimedPub) { onKeyChange?.invoke(username); return }
+        val verifyKey: String
+        val isKeyChange: Boolean
+        when {
+            storedKey == null -> {
+                // First contact — TOFU: trust the claimed key to verify the token,
+                // then pin it via onPeerReady → upsertFromHello.
+                verifyKey   = claimedPub
+                isKeyChange = false
+            }
+            storedKey == claimedPub -> {
+                // Known peer, key matches — normal path.
+                verifyKey   = storedKey
+                isKeyChange = false
+            }
+            else -> {
+                // Stored key exists but differs from what this token claims.
+                // Treat as a key-change event and reject the session.
+                android.util.Log.w("WebRtcEngine",
+                    "Key change detected for $peer — stored≠claimed. Blocking session.")
+                onKeyChange?.invoke(peer)
+                return
+            }
+        }
+
+        val payload = runCatching { PasetoV4.verify(token, verifyKey) }.getOrNull() ?: run {
+            android.util.Log.w("WebRtcEngine", "Signature verification failed for $peer")
+            return
+        }
+
+        val peerEd   = payload["ed25519_pub"]    as? String ?: return
+        val peerX    = payload["x25519_pub"]     as? String ?: return
+        val peerEph  = payload["eph_x25519_pub"] as? String ?: return
+        val username = payload["username"]       as? String ?: peer
+
+        // Sanity: the key inside the payload body must match what we verified against.
+        if (peerEd != verifyKey) {
+            android.util.Log.w("WebRtcEngine", "Payload ed25519_pub mismatch for $peer")
+            if (!isKeyChange) onKeyChange?.invoke(username)
+            return
+        }
 
         val myEph = myEphPriv.getOrPut(peer) {
             crypto.generateEphemeralX25519().also { myEphPriv[peer] = it.priv }.priv
@@ -181,11 +217,12 @@ class WebRtcEngine @Inject constructor(
         emit(peer, JSONObject().apply { put("__type", "msg"); put("token", token) }.toString())
     }
 
-    fun broadcastMessage(text: String) {
-        val key = roomManager.groupKey ?: return
+    fun broadcastMessage(text: String): Boolean {
+        val key = roomManager.groupKey ?: return false
         val token = PasetoV4.encrypt(mapOf("text" to text), key)
         val json  = JSONObject().apply { put("__type", "msg"); put("token", token) }.toString()
         roomManager.members.value.forEach { peer -> emit(peer, json) }
+        return true
     }
 
     fun rebroadcastGroupKey() {

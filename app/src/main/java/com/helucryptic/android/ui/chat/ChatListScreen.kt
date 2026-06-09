@@ -6,12 +6,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -19,6 +19,8 @@ import androidx.navigation.NavController
 import com.helucryptic.android.data.db.ContactEntity
 import com.helucryptic.android.data.repository.ContactRepository
 import com.helucryptic.android.signaling.SignalingState
+import com.helucryptic.android.ui.components.AvatarCircle
+import com.helucryptic.android.ui.components.ListOrEmpty
 import com.helucryptic.android.ui.navigation.Screen
 import com.helucryptic.android.ui.room.PulsingDot
 import javax.inject.Inject
@@ -139,17 +141,15 @@ fun ChatListScreen(nav: NavController) {
             ) { Icon(Icons.Rounded.Edit, contentDescription = "New Chat") }
         }
     ) { padding ->
-        if (contacts.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(
-                    "No contacts yet. Tap + to start a chat.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(contacts) { contact ->
+        ListOrEmpty(
+            isEmpty    = contacts.isEmpty(),
+            emptyIcon  = Icons.AutoMirrored.Rounded.Chat,
+            emptyTitle = "No chats yet",
+            emptyBody  = "Tap the edit button to start a conversation.",
+            modifier   = Modifier.padding(padding)
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(contacts, key = { it.username }) { contact ->
                     ContactRow(contact) { nav.navigate(Screen.Chat.go(contact.username)) }
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
@@ -171,20 +171,7 @@ private fun ContactRow(contact: ContactEntity, onClick: () -> Unit) {
                 maxLines = 1
             )
         },
-        leadingContent = {
-            Surface(
-                modifier = Modifier.size(48.dp).clip(CircleShape),
-                color    = MaterialTheme.colorScheme.primary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        contact.username.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-        }
+        leadingContent = { AvatarCircle(username = contact.username) }
     )
 }
 

@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.helucryptic.android.data.db.RoomEntity
 import com.helucryptic.android.data.repository.RoomRepository
 import com.helucryptic.android.signaling.SignalingState
+import com.helucryptic.android.ui.components.ListOrEmpty
 import com.helucryptic.android.ui.navigation.Screen
 import com.helucryptic.android.ui.theme.DarkSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -138,17 +139,15 @@ fun RoomListScreen(nav: NavController) {
             ) { Icon(Icons.Rounded.Add, contentDescription = "New Room") }
         }
     ) { padding ->
-        if (rooms.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(
-                    "No rooms yet. Tap + to create or join one.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-                items(rooms) { room ->
+        ListOrEmpty(
+            isEmpty    = rooms.isEmpty(),
+            emptyIcon  = Icons.Rounded.MeetingRoom,
+            emptyTitle = "No rooms yet",
+            emptyBody  = "Tap + to create an encrypted room or scan an invite QR.",
+            modifier   = Modifier.padding(padding)
+        ) {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(rooms, key = { it.roomCode }) { room ->
                     RoomRow(room) { nav.navigate(Screen.Room.go(room.roomCode)) }
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }

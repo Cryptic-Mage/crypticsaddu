@@ -4,9 +4,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -15,9 +15,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -33,39 +34,26 @@ fun KeyBackupScreen(
     viewModel: KeyBackupViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
-    var showConfirmDialog by remember { mutableStateOf(false) }
 
+    // Export flow
+    var showExportPassphraseDialog by remember { mutableStateOf(false) }
+    var exportPassphrase           by remember { mutableStateOf("") }
+    var pendingExportUri           by remember { mutableStateOf<Uri?>(null) }
+
+    // Import flow
+    var showImportPassphraseDialog by remember { mutableStateOf(false) }
+    var importPassphrase           by remember { mutableStateOf("") }
+    var pendingImportUri           by remember { mutableStateOf<Uri?>(null) }
+    var showOverwriteDialog        by remember { mutableStateOf(false) }
+
+    // File pickers
     val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null) {
-            val json = viewModel.exportJson()
-            if (json != null) {
-                try {
-                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        OutputStreamWriter(outputStream).use { writer ->
-                            writer.write(json)
-                        }
-                    }
-                    Toast.makeText(context, "Keys exported successfully", Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            } else {
-                Toast.makeText(context, "No identity found to export", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri -> if (uri != null) { pendingExportUri = uri; showExportPassphraseDialog = true } }
 
     val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            pendingImportUri = uri
-            showConfirmDialog = true
-        }
-    }
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) { pendingImportUri = uri; showOverwriteDialog = true } }
 
     Scaffold(
         topBar = {
@@ -90,7 +78,7 @@ fun KeyBackupScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Security Warning Box
+            // Security Warning
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -112,13 +100,15 @@ fun KeyBackupScreen(
                     )
                     Column {
                         Text(
-                            text = "Protect Your Key Backup",
+                            "Protect Your Key Backup",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Your key backup contains your private E2EE cryptographic keys. Anyone with access to this backup file can impersonate you and decrypt your conversations. Store it in a safe, secure place.",
+                            "Your backup is passphrase-encrypted with AES-256-GCM. " +
+                            "Anyone with the file AND the passphrase can impersonate you. " +
+                            "Use a strong, unique passphrase and store the backup safely.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -140,31 +130,26 @@ fun KeyBackupScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.FileDownload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Rounded.FileDownload, null, tint = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = "Export Key Backup",
+                            "Export Key Backup",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
-
                     Text(
-                        text = "Export your current identity configuration and E2EE keys to a JSON file. Use this to restore your account on another device.",
+                        "Export your E2EE identity, encrypted with a passphrase you choose. " +
+                        "Required to restore your account on another device.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     Button(
-                        onClick = { exportLauncher.launch("helucryptic-keys.json") },
+                        onClick  = { exportLauncher.launch("helucryptic-keys.hbk") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small
+                        shape    = MaterialTheme.shapes.small
                     ) {
-                        Icon(Icons.Rounded.Save, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Export Identity JSON")
+                        Icon(Icons.Rounded.Save, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Export Encrypted Backup")
                     }
                 }
             }
@@ -183,96 +168,198 @@ fun KeyBackupScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.FileUpload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Rounded.FileUpload, null, tint = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = "Import Key Backup",
+                            "Import Key Backup",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
-
                     Text(
-                        text = "Restore your identity from a previously exported backup file. Note: This will completely replace your current keys.",
+                        "Restore your identity from an encrypted backup. " +
+                        "This replaces all current keys on this device.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     Button(
-                        onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) },
+                        onClick  = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
-                        colors = ButtonDefaults.buttonColors(
+                        shape    = MaterialTheme.shapes.small,
+                        colors   = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
+                            contentColor   = MaterialTheme.colorScheme.onSecondary
                         )
                     ) {
-                        Icon(Icons.Rounded.FolderOpen, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Import Identity JSON")
+                        Icon(Icons.Rounded.FolderOpen, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Import Backup")
                     }
                 }
             }
         }
     }
 
-    // Confirmation Dialog
-    if (showConfirmDialog && pendingImportUri != null) {
+    // ── Overwrite confirmation (before asking passphrase) ─────────────────────
+    if (showOverwriteDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showConfirmDialog = false
-                pendingImportUri = null
-            },
-            title = { Text("Overwrite Current Identity?") },
-            text = {
-                Text("This action will replace all existing E2EE keys on this device with the ones from the backup file. Any ongoing connections might be interrupted and you will lose access to chats using current keys. Are you sure you want to proceed?")
+            onDismissRequest = { showOverwriteDialog = false; pendingImportUri = null },
+            title = { Text("Replace Current Identity?") },
+            text  = {
+                Text(
+                    "This will permanently overwrite your current E2EE keys. " +
+                    "Any chats encrypted with the current keys will become unreadable. " +
+                    "Are you sure?"
+                )
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        showConfirmDialog = false
-                        val uri = pendingImportUri
-                        pendingImportUri = null
-                        if (uri != null) {
-                            try {
-                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                                    val reader = BufferedReader(InputStreamReader(inputStream))
-                                    val json = reader.readText()
-                                    if (viewModel.validateAndImportJson(json)) {
-                                        Toast.makeText(context, "Identity imported successfully", Toast.LENGTH_LONG).show()
-                                        nav.navigate(Screen.ChatList.route) {
-                                            popUpTo(0) { inclusive = true }
-                                        }
-                                    } else {
-                                        Toast.makeText(context, "Import failed: Invalid or corrupt backup file", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text("Overwrite")
-                }
+                    onClick = { showOverwriteDialog = false; showImportPassphraseDialog = true },
+                    colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Replace") }
             },
             dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        showConfirmDialog = false
-                        pendingImportUri = null
-                    },
-                    shape = MaterialTheme.shapes.small
-                ) {
+                OutlinedButton(onClick = { showOverwriteDialog = false; pendingImportUri = null }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    // ── Export passphrase dialog ──────────────────────────────────────────────
+    if (showExportPassphraseDialog) {
+        var confirmPassphrase by remember { mutableStateOf("") }
+        var error by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = {
+                showExportPassphraseDialog = false
+                exportPassphrase = ""
+                confirmPassphrase = ""
+                pendingExportUri = null
+            },
+            title = { Text("Set Backup Passphrase") },
+            text  = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Choose a strong passphrase to encrypt your backup. You will need it to restore.")
+                    OutlinedTextField(
+                        value         = exportPassphrase,
+                        onValueChange = { exportPassphrase = it; error = null },
+                        label         = { Text("Passphrase") },
+                        singleLine    = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier             = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value         = confirmPassphrase,
+                        onValueChange = { confirmPassphrase = it; error = null },
+                        label         = { Text("Confirm Passphrase") },
+                        singleLine    = true,
+                        isError       = error != null,
+                        supportingText = error?.let { { Text(it) } },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier             = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    when {
+                        exportPassphrase.length < 8 ->
+                            error = "Passphrase must be at least 8 characters"
+                        exportPassphrase != confirmPassphrase ->
+                            error = "Passphrases do not match"
+                        else -> {
+                            val uri = pendingExportUri
+                            if (uri != null) {
+                                val encrypted = viewModel.exportEncrypted(exportPassphrase)
+                                if (encrypted != null) {
+                                    try {
+                                        context.contentResolver.openOutputStream(uri)?.use { out ->
+                                            OutputStreamWriter(out).use { it.write(encrypted) }
+                                        }
+                                        Toast.makeText(context, "Backup exported successfully", Toast.LENGTH_LONG).show()
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "No identity to export", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            showExportPassphraseDialog = false
+                            exportPassphrase = ""
+                            confirmPassphrase = ""
+                            pendingExportUri = null
+                        }
+                    }
+                }) { Text("Export") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showExportPassphraseDialog = false
+                    exportPassphrase = ""
+                    confirmPassphrase = ""
+                    pendingExportUri = null
+                }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // ── Import passphrase dialog ──────────────────────────────────────────────
+    if (showImportPassphraseDialog) {
+        var error by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = {
+                showImportPassphraseDialog = false
+                importPassphrase = ""
+                pendingImportUri = null
+            },
+            title = { Text("Enter Backup Passphrase") },
+            text  = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Enter the passphrase you used when creating this backup.")
+                    OutlinedTextField(
+                        value         = importPassphrase,
+                        onValueChange = { importPassphrase = it; error = null },
+                        label         = { Text("Passphrase") },
+                        singleLine    = true,
+                        isError       = error != null,
+                        supportingText = error?.let { { Text(it) } },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier             = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val uri = pendingImportUri
+                    if (uri != null) {
+                        try {
+                            val json = context.contentResolver.openInputStream(uri)?.use { input ->
+                                BufferedReader(InputStreamReader(input)).readText()
+                            } ?: run { error = "Could not read file"; return@Button }
+
+                            if (viewModel.importEncrypted(json, importPassphrase)) {
+                                Toast.makeText(context, "Identity imported successfully", Toast.LENGTH_LONG).show()
+                                showImportPassphraseDialog = false
+                                importPassphrase = ""
+                                pendingImportUri = null
+                                nav.navigate(Screen.ChatList.route) { popUpTo(0) { inclusive = true } }
+                            } else {
+                                error = "Wrong passphrase or corrupt backup"
+                            }
+                        } catch (e: Exception) {
+                            error = "Import failed: ${e.message}"
+                        }
+                    }
+                }) { Text("Restore") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showImportPassphraseDialog = false
+                    importPassphrase = ""
+                    pendingImportUri = null
+                }) { Text("Cancel") }
             }
         )
     }

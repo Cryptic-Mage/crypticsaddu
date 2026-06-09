@@ -11,6 +11,7 @@ import com.helucryptic.android.crypto.CryptoManager
 import com.helucryptic.android.crypto.Fingerprint
 import com.helucryptic.android.crypto.IdentityStore
 import com.helucryptic.android.data.datastore.AppSettings
+import com.helucryptic.android.data.datastore.AppSettings.Companion.DEFAULT_SIGNALING_URL
 import com.helucryptic.android.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -54,13 +55,14 @@ class OnboardingViewModel @Inject constructor(
 
     fun finish(nav: NavController) {
         viewModelScope.launch {
-            settings.setSignalingUrl(serverUrl.ifEmpty { "wss://helucryptic-signaling.crypticmage00.workers.dev/" })
-            settings.setServerPassword(serverPassword)
+            settings.setSignalingUrl(serverUrl.ifEmpty { AppSettings.DEFAULT_SIGNALING_URL })
             settings.setTurnUrl(turnUrl)
-            settings.setTurnUsername(turnUsername)
-            settings.setTurnPassword(turnPassword)
             settings.setPortForwardEnabled(portForwardEnabled)
             settings.setForwardedPort(forwardedPort.toIntOrNull() ?: 0)
+            // Credentials are synchronous (EncryptedSharedPreferences)
+            settings.setServerPassword(serverPassword)
+            settings.setTurnUsername(turnUsername)
+            settings.setTurnPassword(turnPassword)
             nav.navigate(Screen.ChatList.route) {
                 popUpTo(Screen.Onboarding.route) { inclusive = true }
             }
