@@ -13,14 +13,24 @@ sealed class SignalingMessage {
             val obj = JSONObject(json)
             when (obj.optString("type")) {
                 "session_token" -> {
-                    val dataObj = obj.getJSONObject("data")
+                    // Real server nests under "data"; tolerate a top-level token too.
+                    val dataObj = obj.optJSONObject("data")
                     SessionToken(
-                        token         = dataObj.getString("token"),
-                        reflectedHost = dataObj.optString("reflected_host").takeIf { it.isNotEmpty() }
+                        token         = dataObj?.getString("token") ?: obj.getString("token"),
+                        reflectedHost = dataObj?.optString("reflected_host")?.takeIf { it.isNotEmpty() }
                     )
                 }
                 "error"     -> Error(obj.optString("data"))
                 "peer_left" -> PeerLeft(obj.optString("sender"))
+                "room_state" -> Forward(
+                    sender = obj.optString("sender"),
+                    type   = "room_state",
+                    // The desktop signaling server sends "peers" at the TOP level
+                    // of the message, not nested under "data". The old parser only
+                    // looked at "data", so a client joining an existing room never
+                    // learned who was already there (no hellos, silent failure).
+                    data   = obj.optJSONArray("peers") ?: obj.opt("data")
+                )
                 else        -> Forward(
                     sender = obj.optString("sender"),
                     type   = obj.optString("type"),

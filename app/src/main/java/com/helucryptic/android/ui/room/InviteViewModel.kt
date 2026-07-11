@@ -2,6 +2,7 @@ package com.helucryptic.android.ui.room
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.helucryptic.android.crypto.InviteCodec
 import com.helucryptic.android.data.datastore.AppSettings
 import com.helucryptic.android.data.repository.RoomRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,9 +31,19 @@ class InviteViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val room = roomRepository.getRoom(roomCode)
-                val url = appSettings.signalingUrl.first()
+                val url  = appSettings.signalingUrl.first()
                 if (room != null) {
-                    val inviteStr = "HELU-INV1:${room.roomCode}:${room.psk}:$url"
+                    // Desktop-compatible HELU-INV1 (base64url JSON + checksum) so
+                    // an invite generated on Android can be redeemed on desktop.
+                    // Rooms created before the ROOM-XXXX format fall back to the
+                    // legacy colon format (Android-only, but still scannable).
+                    val inviteStr = runCatching {
+                        InviteCodec.encode(InviteCodec.Invite(
+                            roomId       = room.roomCode,
+                            signalingUrl = url,
+                            psk          = room.psk.takeIf { it.isNotEmpty() },
+                        ))
+                    }.getOrElse { "HELU-INV1:${room.roomCode}:${room.psk}:$url" }
                     _inviteState.value = InviteState.Success(inviteStr)
                 } else {
                     _inviteState.value = InviteState.Error
@@ -46,36 +57,25 @@ class InviteViewModel @Inject constructor(
     fun handleScannedInvite(inviteStr: String, onSuccess: (String) -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
             try {
-                if (!inviteStr.startsWith("HELU-INV1:")) {
-                    onFailure()
-                    return@launch
-                }
-                
-                val parts = inviteStr.removePrefix("HELU-INV1:").split(":")
-                if (parts.size < 3) {
-                    onFailure()
-                    return@launch
-                }
-                
-                val roomCode = parts[0]
-                val psk = parts[1]
-                val signalingUrl = parts.subList(2, parts.size).joinToString(":")
-                
-                if (roomCode.isBlank() || psk.isBlank() || signalingUrl.isBlank()) {
-                    onFailure()
-                    return@launch
-                }
-                
-                // Save room to repository (mark creator as "unknown" since it's not in the invite format)
+                val invite = InviteCodec.decode(inviteStr)
+
                 roomRepository.upsert(
-                    roomCode = roomCode,
-                    psk = psk,
+                    roomCode        = invite.roomId,
+                    psk             = invite.psk ?: "",
                     creatorUsername = "unknown"
                 )
-                
-                // Optionally save/update signaling server URL if needed, or just keep it
-                // For simplicity, we just save the room and connect to it
-                onSuccess(roomCode)
+
+                // Apply the invite's connection details — previously the scanned
+                // URL was ignored, so an invite pointing at a different signaling
+                // server could never actually connect.
+                if (invite.signalingUrl.isNotBlank()) {
+                    appSettings.setSignalingUrl(invite.signalingUrl)
+                }
+                invite.password?.takeIf { it.isNotBlank() }?.let {
+                    appSettings.setServerPassword(it)
+                }
+
+                onSuccess(invite.roomId)
             } catch (e: Exception) {
                 onFailure()
             }

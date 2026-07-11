@@ -36,6 +36,11 @@ class RoomManager @Inject constructor(private val crypto: CryptoManager) {
         _members.value = _members.value + username
     }
 
+    /** Member side: record who the room creator is (trust anchor for group_key). */
+    fun setCreator(username: String) {
+        if (username.isNotEmpty()) roomCreator = username
+    }
+
     /** Returns true if this client was promoted to creator (must re-broadcast group key). */
     fun removeMember(username: String, myUsername: String): Boolean {
         _members.value = _members.value - username
@@ -44,7 +49,14 @@ class RoomManager @Inject constructor(private val crypto: CryptoManager) {
             val next = joinOrder.firstOrNull() ?: return false
             roomCreator = next
             if (next == myUsername) {
-                groupKey = ByteArray(32).also { SecureRandom().nextBytes(it) }
+                // KEEP the existing group key if we already hold one — generating
+                // a fresh key here split the room: peers that already had the old
+                // key ignored the re-broadcast and could no longer decrypt the
+                // promoted creator's messages. Only generate when orphaned
+                // (creator left before we ever received the key). Matches desktop.
+                if (groupKey == null) {
+                    groupKey = ByteArray(32).also { SecureRandom().nextBytes(it) }
+                }
                 return true
             }
         }
@@ -64,11 +76,23 @@ class RoomManager @Inject constructor(private val crypto: CryptoManager) {
         groupKey = Base64.decode(payload["group_key"] as String, Base64.NO_WRAP)
     }
 
-    /** HMAC-SHA256(key=psk, msg=nonce||roomId) — hex string. */
-    fun pskProof(nonce: String, roomId: String, psk: String): String {
+    /**
+     * HMAC-SHA256(key=base64decode(psk), msg="nonce|roomId|responder") — hex.
+     *
+     * Wire-compatible with desktop webrtc_engine._psk_proof():
+     *  - the PSK is a base64-encoded 32-byte key and must be DECODED before
+     *    use as the HMAC key (the old code MAC'd the base64 text itself,
+     *    which was incompatible with desktop peers);
+     *  - "|" separators prevent ambiguous concatenation;
+     *  - binding the RESPONDER's username defeats the reflection attack
+     *    (replaying a victim's own answer back at them).
+     */
+    fun pskProof(nonce: String, roomId: String, psk: String, responder: String): String {
+        val key = runCatching { Base64.decode(psk, Base64.NO_WRAP) }
+            .getOrNull()?.takeIf { it.isNotEmpty() } ?: psk.toByteArray()
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(psk.toByteArray(), "HmacSHA256"))
-        return mac.doFinal((nonce + roomId).toByteArray())
+        mac.init(SecretKeySpec(key, "HmacSHA256"))
+        return mac.doFinal(("$nonce|$roomId|$responder").toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
     }
 

@@ -17,9 +17,13 @@ class P2PChannelManager @Inject constructor(
 ) {
     private var factory: PeerConnectionFactory? = null
     private val initMutex = Mutex()
+    // Multiple independent STUN providers so gathering still works if one is
+    // blocked. An IPv6 path (gathered automatically when the device has a
+    // routable v6 address) means NO NAT at all — the biggest non-relay win.
     private var cachedIce: List<PeerConnection.IceServer> = listOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
-        PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer()
+        PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
+        PeerConnection.IceServer.builder("stun:stun.cloudflare.com:3478").createIceServer()
     )
 
     private val connections  = mutableMapOf<String, PeerConnection>()
@@ -32,9 +36,18 @@ class P2PChannelManager @Inject constructor(
     var onSendSignal:  ((peer: String, json: String) -> Unit)? = null
     /** Called when data channel transitions to OPEN. */
     var onChannelOpen: ((peer: String) -> Unit)? = null
+    /** Called when a peer connection FAILS — lets ConnectionManager self-heal. */
+    var onPeerFailed:  ((peer: String) -> Unit)? = null
 
     suspend fun initialize() = initMutex.withLock {
         if (factory != null) return@withLock
+        // REQUIRED before any factory/PeerConnection use: loads the native
+        // WebRTC library and initialises globals. Skipping this made
+        // createPeerConnectionFactory() throw on first P2P attempt.
+        PeerConnectionFactory.initialize(
+            PeerConnectionFactory.InitializationOptions.builder(ctx)
+                .createInitializationOptions()
+        )
         factory = PeerConnectionFactory.builder()
             .setOptions(PeerConnectionFactory.Options())
             .createPeerConnectionFactory()
@@ -115,6 +128,14 @@ class P2PChannelManager @Inject constructor(
             sdpSemantics   = PeerConnection.SdpSemantics.UNIFIED_PLAN
             bundlePolicy   = PeerConnection.BundlePolicy.MAXBUNDLE
             rtcpMuxPolicy  = PeerConnection.RtcpMuxPolicy.REQUIRE
+            // Gather ALL interfaces incl. IPv6, and TCP candidates so we can
+            // still connect where UDP is fully blocked (some captive/corporate
+            // networks). Continual gathering lets ICE recover after a network
+            // change (Wi-Fi↔cellular) instead of dying on the old candidates.
+            candidateNetworkPolicy   = PeerConnection.CandidateNetworkPolicy.ALL
+            tcpCandidatePolicy       = PeerConnection.TcpCandidatePolicy.ENABLED
+            continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
+            iceTransportsType        = PeerConnection.IceTransportsType.ALL
         }
         val pc = f.createPeerConnection(config, pcObserver(peer)) ?: return null
         connections[peer] = pc
@@ -138,6 +159,11 @@ class P2PChannelManager @Inject constructor(
                 state == PeerConnection.IceConnectionState.DISCONNECTED ||
                 state == PeerConnection.IceConnectionState.CLOSED) {
                 openPeers.remove(peer)
+            }
+            if (state == PeerConnection.IceConnectionState.FAILED) {
+                // Hard failure (DISCONNECTED can recover on its own; messages
+                // already fall back to the relay) — let the manager rebuild.
+                onPeerFailed?.invoke(peer)
             }
         }
         override fun onSignalingChange(s: PeerConnection.SignalingState?)          {}

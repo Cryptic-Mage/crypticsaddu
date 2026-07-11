@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>helucryptic. Direct. Encrypted. Private.</title>
+  <meta name="description" content="A peer-to-peer desktop messenger. Messages travel directly between machines, sealed end-to-end with PASETO v4 cryptography. No cloud relay. No data retention.">
+  <meta name="theme-color" content="#090909" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#faf6ee" media="(prefers-color-scheme: light)">
+
+  <link rel="icon" type="image/x-icon" href="icon.ico">
+  <link rel="icon" type="image/png"    href="icon.png">
+  <link rel="apple-touch-icon"         href="icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+/* ================================================================
+   DESIGN TOKENS
+================================================================ */
+:root {
+  --ease:     cubic-bezier(0.16,1,0.3,1);
+  --ease-std: cubic-bezier(0.4,0,0.2,1);
+  --f-dis: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --f-bdy: 'Inter', system-ui, sans-serif;
+  --f-mno: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Dark */
+[data-theme="dark"] {
+  --bg:       #090909;
+  --s1:       #101011;
+  --s2:       #181819;
+  --s3:       #202021;
+  --border:   #2a2a2b;
+  --text:     #f0f0ee;
+  --t2:       #949490;   /* readable body / secondary text */
+  --t3:       #3e3e3c;   /* decorative only — dividers, comments, placeholders */
+  --gold:     #c9a96e;
+  --gold-mid: rgba(201,169,110,0.3);
+  --gold-dim: rgba(201,169,110,0.09);
+  --green:    #4ade80;
+  --green-dim:rgba(74,222,128,0.09);
+  --amber:    #fbbf24;
+  /* Mobile illustration palette */
+  --ic-a:#a78bfa; --ic-b:#c4b5fd; --ic-s:#666664;
+  --ic-p:#c9a96e; --ic-k:#4ade80; --ic-sig:rgba(201,169,110,.5);
+}
+
+/* Light — Clean White + Electric Blue */
+[data-theme="light"] {
+  --bg:       #ffffff;
+  --s1:       #f8fafc;
+  --s2:       #f1f5f9;
+  --s3:       #e2e8f0;
+  --border:   #cbd5e1;
+  --text:     #0f172a;
+  --t2:       #475569;
+  --t3:       #94a3b8;
+  --gold:     #1d4ed8;
+  --gold-mid: rgba(29,78,216,0.22);
+  --gold-dim: rgba(29,78,216,0.07);
+  --green:    #059669;
+  --green-dim:rgba(5,150,105,0.08);
+  --amber:    #d97706;
+  --ic-a:#7c3aed; --ic-b:#8b5cf6; --ic-s:#64748b;
+  --ic-p:#1d4ed8; --ic-k:#059669; --ic-sig:rgba(29,78,216,.45);
+}
+
+/* Light-only structural overrides */
+[data-theme="light"] .nav__inner {
+  background: rgba(255,255,255,0.88);
+  border-color: rgba(29,78,216,0.12);
+}
+[data-theme="light"] .hero {
+  background: linear-gradient(160deg,#f0f4ff 0%,#ffffff 50%,#f8fafc 100%);
+}
+[data-theme="light"] .hero__bg-dots {
+  background-image: radial-gradient(circle,rgba(29,78,216,0.12) 1px,transparent 1px);
+}
+[data-theme="light"] .cap {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.06);
+}
+[data-theme="light"] .cap:hover {
+  box-shadow: 0 6px 24px rgba(29,78,216,0.12);
+  border-color: rgba(29,78,216,0.28);
+}
+[data-theme="light"] #sprogress {
+  background: linear-gradient(90deg,#1d4ed8,#059669);
+}
+[data-theme="light"] .cta-glow {
+  background: radial-gradient(ellipse 55% 60% at 50% 110%,rgba(29,78,216,0.22),transparent 70%);
+}
+[data-theme="light"] #cursor-glow {
+  background: radial-gradient(circle,rgba(29,78,216,0.15) 0%,transparent 65%);
+}
+
+/* ================================================================
+   VIEW TRANSITIONS
+================================================================ */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-new(root){z-index:9999}
+
+/* ================================================================
+   RESET
+================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:var(--f-bdy);
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+canvas,img,svg{display:block}
+*:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .scene-arch{height:auto!important}
+  .scene-arch__pin{position:relative!important;height:auto!important}
+}
+
+/* ================================================================
+   SCROLL PROGRESS
+================================================================ */
+#sprogress{
+  position:fixed;top:0;left:0;width:0%;height:1.5px;
+  background:linear-gradient(90deg,var(--gold),var(--green));
+  z-index:1000;pointer-events:none;transition:width 60ms linear;
+}
+
+/* ================================================================
+   NAV
+================================================================ */
+.nav{
+  position:fixed;top:0;left:0;right:0;
+  z-index:500;padding:14px 20px;
+  display:flex;justify-content:center;
+  pointer-events:none;
+}
+.nav__inner{
+  width:100%;max-width:1120px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 13px;border-radius:13px;
+  border:1px solid var(--border);
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  pointer-events:all;transition:background .3s;
+}
+.nav__brand{display:flex;align-items:center;gap:9px}
+.nav__logo{
+  width:29px;height:29px;border-radius:7px;
+  border:1px solid var(--border);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold);flex-shrink:0;transition:border-color .2s;
+}
+.nav__brand:hover .nav__logo{border-color:var(--gold)}
+.nav__name{font-family:var(--f-dis);font-weight:700;font-size:14px;letter-spacing:-.01em;display:block}
+.nav__ver{font-family:var(--f-mno);font-size:8.5px;letter-spacing:.07em;color:var(--t2);display:block;opacity:.55}
+.nav__links{display:flex;align-items:center;gap:22px;list-style:none}
+.nav__links a{font-size:13px;font-weight:500;color:var(--t2);transition:color .2s}
+.nav__links a:hover{color:var(--text)}
+.nav__actions{display:flex;align-items:center;gap:7px}
+.nav__btn{
+  width:31px;height:31px;border-radius:7px;
+  border:1px solid var(--border);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t2);transition:all .2s;
+}
+.nav__btn:hover{color:var(--text);border-color:var(--t2)}
+.nav__gh{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 13px;border-radius:7px;
+  border:1px solid var(--border);background:var(--s2);
+  font-family:var(--f-mno);font-size:10.5px;color:var(--text);
+  transition:all .2s;
+}
+.nav__gh:hover{border-color:var(--gold);color:var(--gold)}
+.nav__gh-meta{font-size:9px;color:var(--t2);display:block;line-height:1}
+.nav__gh-count{font-size:10px;font-weight:600;display:block;line-height:1.3}
+.nav__hamburger{
+  display:none;width:31px;height:31px;border-radius:7px;
+  border:1px solid var(--border);align-items:center;justify-content:center;
+  color:var(--t2);background:var(--s2);
+}
+.mobile-nav{
+  position:fixed;inset:0;z-index:800;
+  background:color-mix(in srgb,var(--bg) 96%,transparent);
+  backdrop-filter:blur(24px) saturate(120%);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:28px;
+  opacity:0;transition:opacity .2s;
+}
+.mobile-nav.open{opacity:1}
+.mobile-nav a{
+  font-family:var(--f-dis);font-weight:700;
+  font-size:clamp(1.6rem,6vw,2.2rem);
+  color:var(--t2);transition:color .2s;
+}
+.mobile-nav a:hover{color:var(--text)}
+.mobile-nav__close{
+  position:absolute;top:22px;right:22px;
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--border);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t2);transition:all .2s;
+}
+.mobile-nav__close:hover{color:var(--text)}
+
+/* ================================================================
+   BUTTONS
+================================================================ */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:11px 20px;border-radius:9px;
+  font-weight:600;font-size:14px;
+  border:1px solid transparent;
+  transition:all .18s var(--ease-std);
+  white-space:nowrap;
+}
+.btn-solid{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn-solid:hover{transform:translateY(-1px);opacity:.88}
+.btn-outline{background:transparent;color:var(--t2);border-color:var(--border)}
+.btn-outline:hover{color:var(--text);border-color:var(--t2)}
+
+/* ================================================================
+   HERO — static, no canvas
+================================================================ */
+.scene-hero{
+  position:relative;
+  min-height:100svh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:100px 24px 72px;
+  overflow:hidden;
+  text-align:center;
+}
+
+/* CSS dot-grid background */
+.hero-dots{
+  position:absolute;inset:0;
+  background-image:radial-gradient(circle,var(--border) 1px,transparent 1px);
+  background-size:36px 36px;
+  pointer-events:none;
+}
+/* Radial fade mask so dots fade toward edges */
+[data-theme="dark"] .hero-dots{
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+  opacity:.55;
+}
+[data-theme="light"] .hero-dots{
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+  opacity:.7;
+}
+/* Bottom fade so hero blends into the thesis section */
+.hero-fade{
+  position:absolute;bottom:0;left:0;right:0;height:180px;
+  background:linear-gradient(to top,var(--bg),transparent);
+  pointer-events:none;
+}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  border:1px solid var(--border);
+  background:color-mix(in srgb,var(--s1) 90%,transparent);
+  font-family:var(--f-mno);font-size:10px;
+  color:var(--t2);margin-bottom:32px;white-space:nowrap;
+  position:relative;z-index:1;
+}
+.badge-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+  animation:dot-pulse 2.5s ease infinite;
+}
+@keyframes dot-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.hero-headline{
+  font-family:var(--f-dis);font-weight:800;
+  font-size:clamp(2rem,5.5vw,4rem);
+  line-height:1.06;letter-spacing:-.04em;
+  color:var(--text);
+  max-width:18ch;
+  margin-bottom:20px;
+  position:relative;z-index:1;
+}
+.hero-sub{
+  font-size:clamp(1rem,1.8vw,1.15rem);
+  line-height:1.65;
+  color:var(--t2);
+  max-width:44ch;
+  margin-bottom:36px;
+  position:relative;z-index:1;
+}
+.hero-ctas{
+  display:flex;gap:10px;flex-wrap:wrap;
+  justify-content:center;
+  position:relative;z-index:1;
+}
+
+/* key-value tags below CTAs */
+.hero-tags{
+  display:flex;gap:8px;flex-wrap:wrap;
+  justify-content:center;
+  margin-top:40px;
+  position:relative;z-index:1;
+}
+.hero-tag{
+  font-family:var(--f-mno);font-size:9.5px;
+  padding:4px 10px;border-radius:5px;
+  border:1px solid var(--border);
+  color:var(--t2);
+  background:color-mix(in srgb,var(--s1) 60%,transparent);
+}
+
+/* ================================================================
+   THESIS
+================================================================ */
+.section-thesis{
+  padding:88px 24px;
+  border-top:1px solid var(--border);
+  background:var(--s1);
+}
+.thesis-inner{max-width:900px;margin:0 auto}
+.thesis-graf{
+  font-family:var(--f-dis);font-weight:700;
+  font-size:clamp(1.65rem,3.8vw,2.8rem);
+  line-height:1.22;letter-spacing:-.03em;
+  color:var(--text);margin-bottom:32px;
+}
+.thesis-word{
+  display:inline;
+  opacity:0;
+  transition:opacity .4s ease;
+}
+.thesis-word.lit{opacity:1}
+.thesis-aside{
+  font-size:16px;line-height:1.75;color:var(--t2);
+  max-width:540px;
+  padding-left:20px;border-left:2px solid var(--border);
+}
+
+/* ================================================================
+   SCENE: ARCHITECTURE
+================================================================ */
+.scene-arch{
+  height:360vh;
+  border-top:1px solid var(--border);
+}
+.scene-arch__pin{
+  position:sticky;top:0;
+  height:100svh;overflow:hidden;
+  display:grid;
+  grid-template-columns:1fr 360px;
+}
+.arch-canvas-wrap{
+  position:relative;overflow:hidden;
+  background:var(--bg);
+  /* Must have explicit height so getBoundingClientRect works before first scroll */
+  height:100%;min-height:100svh;
+}
+#arch-canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* Desktop sidebar */
+.arch-panel{
+  background:var(--s1);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;position:relative;
+}
+.arch-panel__track{
+  position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--border);
+}
+.arch-panel__fill{
+  position:absolute;left:0;top:0;width:2px;height:0%;
+  background:var(--gold);transition:height .35s var(--ease);
+}
+.arch-step{
+  flex:1;padding:18px 22px 18px 28px;
+  border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;justify-content:center;
+  opacity:.38;transition:opacity .3s ease,background .3s ease;
+}
+.arch-step:last-child{border-bottom:none}
+/* Light mode needs higher base opacity — dark text fades out faster */
+[data-theme="light"] .arch-step{opacity:.62}
+.arch-step.is-active{
+  opacity:1;
+  background:color-mix(in srgb,var(--gold-dim) 100%,var(--s1));
+}
+/* Mobile illustrations — hidden on desktop, revealed in media query */
+.arch-step__illo{display:none}
+.arch-step__num{
+  font-family:var(--f-mno);font-size:8px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--t2);margin-bottom:5px;
+  opacity:.55;
+}
+.arch-step.is-active .arch-step__num{color:var(--gold);opacity:1}
+.arch-step__title{
+  font-family:var(--f-dis);font-weight:700;font-size:.94rem;
+  color:var(--text);margin-bottom:6px;letter-spacing:-.01em;
+}
+.arch-step__body{font-size:12px;line-height:1.65;color:var(--t2)}
+.arch-step__tag{
+  display:inline-block;margin-top:8px;
+  font-family:var(--f-mno);font-size:8px;
+  padding:2px 7px;border-radius:4px;
+  border:1px solid var(--border);color:var(--t2);
+  letter-spacing:.04em;transition:border-color .25s,color .25s;
+  opacity:.6;
+}
+.arch-step.is-active .arch-step__tag{border-color:var(--gold-mid);color:var(--gold);opacity:1}
+
+/* Mobile card */
+.arch-mobile-card{
+  display:none;
+  position:absolute;bottom:20px;left:16px;right:16px;
+  padding:14px 16px;
+  background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(16px) saturate(120%);
+  border:1px solid var(--border);border-radius:12px;
+  z-index:10;
+}
+.arch-mobile-card__num{
+  font-family:var(--f-mno);font-size:8px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:4px;
+}
+.arch-mobile-card__title{
+  font-family:var(--f-dis);font-weight:700;font-size:.94rem;
+  color:var(--text);margin-bottom:4px;
+}
+.arch-mobile-card__body{font-size:12px;line-height:1.6;color:var(--t2)}
+
+/* ================================================================
+   SHARED SECTION
+================================================================ */
+.section{padding:88px 24px}
+.sec-header{max-width:1120px;margin:0 auto 48px}
+.eyebrow{
+  font-family:var(--f-mno);font-size:9.5px;font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--t2);
+  margin-bottom:13px;
+}
+.eyebrow--gold{color:var(--gold)}
+.eyebrow--green{color:var(--green)}
+.sec-title{
+  font-family:var(--f-dis);font-weight:800;
+  font-size:clamp(1.6rem,3.6vw,2.4rem);
+  letter-spacing:-.035em;line-height:1.1;margin-bottom:12px;
+}
+.sec-body{font-size:16px;line-height:1.72;color:var(--t2);max-width:500px}
+
+/* ================================================================
+   CAPABILITIES
+================================================================ */
+.section-caps{border-top:1px solid var(--border)}
+.caps-grid{
+  max-width:1120px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+}
+.cap{background:var(--s1);padding:26px 24px;transition:background .2s}
+.cap:hover{background:var(--s2)}
+.cap__ico{
+  width:34px;height:34px;border-radius:8px;
+  border:1px solid var(--border);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t2);margin-bottom:14px;transition:all .2s;
+}
+.cap:hover .cap__ico{border-color:var(--gold);background:var(--gold-dim);color:var(--gold)}
+.cap__badge{
+  float:right;margin-top:1px;
+  font-family:var(--f-mno);font-size:8px;
+  padding:2px 7px;border-radius:4px;
+  border:1px solid var(--border);color:var(--t2);background:var(--bg);
+}
+.cap__title{
+  font-family:var(--f-dis);font-weight:700;
+  font-size:.9rem;letter-spacing:-.01em;
+  color:var(--text);clear:both;margin-bottom:7px;
+}
+.cap__body{font-size:12.5px;line-height:1.65;color:var(--t2)}
+
+/* ================================================================
+   CRYPTO EXPLORER
+================================================================ */
+.section-crypto{border-top:1px solid var(--border);background:var(--s1)}
+.crypto-layout{
+  max-width:1120px;margin:0 auto;
+  display:grid;grid-template-columns:300px 1fr;
+  gap:20px;align-items:start;
+}
+.crypto-nav{display:flex;flex-direction:column;gap:4px}
+.crypto-btn{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 13px;border-radius:9px;
+  border:1px solid transparent;background:transparent;
+  text-align:left;width:100%;transition:all .18s var(--ease-std);
+}
+.crypto-btn:hover{background:var(--s2);border-color:var(--border)}
+.crypto-btn.is-active{background:var(--s2);border-color:var(--border)}
+.crypto-btn__ico{
+  width:32px;height:32px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--t2);flex-shrink:0;transition:all .18s;
+}
+.crypto-btn.is-active .crypto-btn__ico{
+  background:var(--gold-dim);border-color:var(--gold-mid);color:var(--gold)
+}
+.crypto-btn__n{font-size:12.5px;font-weight:600;color:var(--t2);display:block;margin-bottom:2px;transition:color .18s}
+.crypto-btn.is-active .crypto-btn__n,.crypto-btn:hover .crypto-btn__n{color:var(--text)}
+.crypto-btn__s{font-family:var(--f-mno);font-size:9px;color:var(--t2);opacity:.6;transition:color .18s}
+.crypto-btn.is-active .crypto-btn__s{opacity:1}
+.crypto-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:13px;
+  overflow:hidden;transition:opacity .15s ease,transform .15s ease;
+}
+.crypto-card__head{padding:22px 22px 18px;border-bottom:1px solid var(--border)}
+.chips{display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap}
+.chip{font-family:var(--f-mno);font-size:8px;padding:3px 8px;border-radius:4px;letter-spacing:.05em}
+.chip--gold{background:var(--gold-dim);border:1px solid var(--gold-mid);color:var(--gold);text-transform:uppercase;letter-spacing:.09em}
+.chip--neu{background:var(--s2);border:1px solid var(--border);color:var(--t2)}
+.crypto-card__title{
+  font-family:var(--f-dis);font-weight:800;font-size:1.35rem;
+  letter-spacing:-.02em;color:var(--text);margin-bottom:6px;
+}
+.crypto-card__short{font-size:13px;color:var(--t2);line-height:1.6}
+.crypto-card__body{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.crypto-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmeta{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:11px}
+.cmeta__l{font-family:var(--f-mno);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--t2);margin-bottom:5px;opacity:.7}
+.cmeta__v{font-family:var(--f-mno);font-size:10px;color:var(--text);line-height:1.5}
+.cmeta__v--g{color:var(--green)}
+.clabel{font-family:var(--f-mno);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--t2);margin-bottom:6px;opacity:.7}
+#cryptoDesc{font-size:13px;line-height:1.7;color:var(--t2)}
+.crypto-card__foot{background:var(--s1);border-top:1px solid var(--border);padding:13px 22px}
+.cfoot-meta{display:flex;justify-content:space-between;font-family:var(--f-mno);font-size:9px;color:var(--t2);margin-bottom:8px;opacity:.75}
+.cfoot-meta span:last-child{color:var(--green);opacity:1}
+#cryptoCode{
+  font-family:var(--f-mno);font-size:9.5px;color:var(--t2);
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:9px 11px;overflow-x:auto;white-space:nowrap;line-height:1.5;
+}
+
+/* ================================================================
+   SETUP
+================================================================ */
+.section-setup{border-top:1px solid var(--border)}
+.setup-layout{
+  max-width:1120px;margin:0 auto;
+  display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start;
+}
+.terminal-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:13px;overflow:hidden
+}
+.terminal__bar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:9px;padding:10px 13px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.terminal__dots{display:flex;gap:5px}
+.terminal__dot{width:9px;height:9px;border-radius:50%}
+.terminal__tabs{
+  display:flex;gap:2px;
+  background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:2px;
+}
+.os-tab{
+  padding:5px 11px;border-radius:4px;
+  font-family:var(--f-mno);font-size:9.5px;color:var(--t2);
+  transition:all .18s;min-height:27px;
+}
+.os-tab:hover{color:var(--text)}
+.os-tab.is-active{background:var(--s2);color:var(--text);font-weight:500}
+.terminal__copy{
+  display:flex;align-items:center;gap:5px;padding:4px 9px;
+  border-radius:5px;background:var(--s2);border:1px solid var(--border);
+  font-family:var(--f-mno);font-size:9.5px;color:var(--t2);transition:all .18s;
+}
+.terminal__copy:hover{color:var(--text);border-color:var(--t2)}
+.terminal__body{
+  background:var(--bg);padding:20px 22px;
+  font-family:var(--f-mno);font-size:11.5px;line-height:2;
+  min-height:240px;overflow-x:auto;color:var(--t2);
+  transition:opacity .12s ease,transform .12s ease;
+}
+.terminal-code .cm{color:var(--t2);opacity:.45}
+.terminal-code .fn{color:var(--text)}
+.terminal-code .st{color:var(--green)}
+.terminal__toast{
+  padding:9px 14px;display:none;
+  border-top:1px solid rgba(74,222,128,.18);
+  background:rgba(74,222,128,.05);
+  font-family:var(--f-mno);font-size:10.5px;color:var(--green);text-align:center;
+}
+.env-card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:13px;padding:22px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.env-card__title{font-family:var(--f-dis);font-weight:700;font-size:.96rem;color:var(--text);letter-spacing:-.01em;margin-bottom:3px}
+.env-card__sub{font-size:12.5px;color:var(--t2);line-height:1.6}
+.env-label{display:block;font-family:var(--f-mno);font-size:8.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--t2);margin-bottom:6px;opacity:.8}
+.env-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:7px;padding:9px 11px;
+  font-family:var(--f-mno);font-size:11px;color:var(--text);
+  outline:none;transition:border-color .18s,box-shadow .18s;
+}
+.env-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+.env-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:8px;
+}
+.env-row strong{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.env-row small{font-size:10px;color:var(--t2);opacity:.7}
+.toggle{position:relative}
+.toggle input{position:absolute;opacity:0;width:0;height:0}
+.toggle-track{
+  display:block;width:33px;height:18px;
+  background:var(--border);border-radius:9px;cursor:pointer;
+  position:relative;transition:background .18s;
+}
+.toggle-track::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;background:var(--t2);
+  border-radius:50%;transition:transform .18s,background .18s;
+}
+.toggle input:checked+.toggle-track{background:var(--gold)}
+.toggle input:checked+.toggle-track::after{transform:translateX(15px);background:#fff}
+.env-out{border-top:1px solid var(--border);padding-top:14px}
+.env-out-label{font-family:var(--f-mno);font-size:8.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--t2);margin-bottom:7px;opacity:.8}
+#envOutputBlock{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:11px 13px;font-family:var(--f-mno);font-size:10.5px;
+  color:var(--t2);line-height:1.9;overflow-x:auto;
+  transition:border-color .2s,box-shadow .2s;
+}
+
+/* ================================================================
+   OPEN SOURCE
+================================================================ */
+.section-oss{border-top:1px solid var(--border);background:var(--s1)}
+.oss-layout{
+  max-width:1120px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:center;
+}
+.oss-stats{display:flex;gap:28px;margin:22px 0;flex-wrap:wrap}
+.oss-num{
+  font-family:var(--f-dis);font-weight:800;font-size:2rem;
+  letter-spacing:-.04em;color:var(--text);line-height:1;margin-bottom:4px;
+}
+.oss-lbl{font-family:var(--f-mno);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--t2);opacity:.75}
+.oss-panel{
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:22px;
+}
+.oss-panel-title{font-family:var(--f-mno);font-size:8.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--t2);margin-bottom:11px;opacity:.75}
+.oss-links{display:flex;flex-direction:column;gap:4px}
+.oss-link{
+  display:flex;align-items:center;gap:9px;padding:9px 11px;
+  border-radius:7px;border:1px solid transparent;background:var(--s1);
+  font-family:var(--f-mno);font-size:11px;color:var(--t2);transition:all .18s;
+}
+.oss-link:hover{border-color:var(--border);color:var(--text)}
+.oss-link svg{flex-shrink:0;color:var(--t2);opacity:.5;transition:all .18s}
+.oss-link:hover svg{opacity:1;color:var(--gold)}
+.oss-link__m{margin-left:auto;font-size:9px;color:var(--t2);opacity:.55}
+.oss-meta{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.omr{display:flex;align-items:center;justify-content:space-between;font-family:var(--f-mno);font-size:10px}
+.omr__k{color:var(--t2);opacity:.65}
+.omr__v{color:var(--t2)}
+.omr__v--g{color:var(--green)}
+
+/* ================================================================
+   CTA + FOOTER
+================================================================ */
+.section-cta{border-top:1px solid var(--border);padding:88px 24px;text-align:center}
+.cta-inner{max-width:540px;margin:0 auto}
+.cta-title{
+  font-family:var(--f-dis);font-weight:800;
+  font-size:clamp(1.75rem,4.4vw,2.7rem);
+  letter-spacing:-.035em;line-height:1.08;margin-bottom:14px;
+}
+.cta-body{font-size:16px;line-height:1.7;color:var(--t2);margin-bottom:28px}
+.cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px 22px}
+.footer-grid{
+  max-width:1120px;margin:0 auto;
+  display:grid;grid-template-columns:1.8fr 1fr 1fr;
+  gap:28px;margin-bottom:32px;
+}
+.footer-brand{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.footer-brand-ico{
+  width:27px;height:27px;border-radius:6px;
+  border:1px solid var(--border);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;color:var(--gold);
+}
+.footer-brand-name{font-family:var(--f-dis);font-weight:700;font-size:13px;letter-spacing:-.01em}
+.footer-desc{font-size:12.5px;line-height:1.7;color:var(--t2);max-width:290px;margin-bottom:11px}
+.footer-contact{display:flex;align-items:center;gap:7px;font-family:var(--f-mno);font-size:10px;color:var(--t2)}
+.footer-contact a{color:var(--t2);transition:color .18s}
+.footer-contact a:hover{color:var(--gold)}
+.footer-col-label{font-family:var(--f-mno);font-size:8.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--t2);margin-bottom:10px;opacity:.75}
+.footer-links{display:flex;flex-direction:column;gap:8px}
+.footer-links a{
+  font-family:var(--f-mno);font-size:11px;color:var(--t2);
+  display:flex;align-items:center;gap:7px;transition:color .18s;
+}
+.footer-links a:hover{color:var(--text)}
+.footer-links svg{flex-shrink:0;opacity:.55}
+.footer-bottom{
+  max-width:1120px;margin:0 auto;
+  padding-top:18px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:9px;
+}
+.footer-copy{font-family:var(--f-mno);font-size:10px;color:var(--t2);opacity:.55}
+.footer-legal{display:flex;gap:14px}
+.footer-legal a{font-family:var(--f-mno);font-size:10px;color:var(--t2);opacity:.6;transition:opacity .18s}
+.footer-legal a:hover{opacity:1}
+
+/* ================================================================
+   SCROLL REVEAL
+================================================================ */
+.reveal{opacity:0;transform:translateX(-72px) translateY(6px);transition:opacity .85s var(--ease),transform .85s var(--ease)}
+.reveal.visible{opacity:1;transform:none}
+.reveal--d1{transition-delay:.12s}
+.reveal--d2{transition-delay:.24s}
+.reveal--d3{transition-delay:.36s}
+
+/* ================================================================
+   ARCH MOBILE ILLUSTRATIONS
+================================================================ */
+/* Node circles — solid fill = packets cleanly hide behind node edge */
+.illo-na{fill:var(--s2);stroke:var(--ic-a);stroke-width:1.5}
+.illo-nb{fill:var(--s2);stroke:var(--ic-b);stroke-width:1.5}
+.illo-ns{fill:var(--s2);stroke:var(--ic-s);stroke-width:1.5}
+/* Ticks (the dash inside each node) */
+.illo-ta{stroke:var(--ic-a);stroke-width:1.5;fill:none}
+.illo-tb{stroke:var(--ic-b);stroke-width:1.5;fill:none}
+.illo-ts{stroke:var(--ic-s);stroke-width:1.2;fill:none}
+/* Wires and signal arcs */
+.illo-wp{stroke:var(--ic-p);stroke-width:1.5;fill:none}  /* gold P2P wire */
+.illo-wk{stroke:var(--ic-k);stroke-width:1.5;fill:none;opacity:.75} /* green sealed wire */
+.illo-sg{stroke:var(--ic-sig);stroke-width:1.2;stroke-dasharray:4 3;fill:none} /* signal dash */
+/* Packets */
+.illo-pp{fill:var(--ic-p)}  /* gold packet */
+.illo-pk{fill:var(--ic-k)}  /* green sealed packet */
+/* Text */
+.illo-lbl{fill:var(--t2);font-size:8px;text-anchor:middle;font-family:var(--f-mno)}
+.illo-sub{fill:var(--t2);font-size:6.5px;text-anchor:middle;opacity:.5;font-family:var(--f-mno)}
+.illo-srv{fill:var(--ic-s);font-size:7px;text-anchor:middle;font-family:var(--f-mno)}
+/* Animations */
+@keyframes illo-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.13);opacity:.4}}
+.illo-pa{animation:illo-pulse 2.5s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.illo-pb{animation:illo-pulse 2.5s ease-in-out .85s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes illo-dashflow{to{stroke-dashoffset:-14}}
+.illo-df{animation:illo-dashflow 1.1s linear infinite}
+@keyframes illo-beat{0%,100%{opacity:.6}50%{opacity:1}}
+.illo-bt{animation:illo-beat 1.4s ease-in-out infinite}
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+@media(max-width:1100px){
+  /* ── Arch: replace scrollytelling with static step list ── */
+  .scene-arch{height:auto!important}
+  .scene-arch__pin{
+    position:relative!important;height:auto!important;
+    display:block;padding:0 0 48px;
+  }
+  .arch-canvas-wrap{display:none}
+  .arch-mobile-card{display:none}   /* old dynamic card — no longer needed */
+  .arch-panel{
+    display:flex;flex-direction:column;width:100%;
+    border-top:none;border-left:none;
+  }
+  .arch-panel__track{display:none}  /* hide scroll progress bar */
+  .arch-step{
+    opacity:1!important;            /* all steps fully visible */
+    padding:20px 20px 20px 28px;
+    border-bottom:1px solid var(--border);
+    border-left:3px solid transparent;
+    transition:border-color .2s;
+  }
+  .arch-step:last-child{border-bottom:none}
+  .arch-step.is-active{
+    background:transparent;
+    border-left-color:var(--gold);
+  }
+  /* ── Mobile step illustrations ── */
+  .arch-step__illo{
+    display:block;
+    width:100%;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--s2);
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .arch-step__illo svg{
+    display:block;width:100%;height:auto;
+  }
+  /* ── Other responsive ── */
+  .crypto-layout{grid-template-columns:1fr}
+  .oss-layout{grid-template-columns:1fr;gap:28px}
+}
+@media(max-width:900px){
+  .nav__links,.nav__gh{display:none}
+  .nav__hamburger{display:flex}
+  .caps-grid{grid-template-columns:1fr 1fr}
+  .setup-layout{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr;gap:20px}
+}
+@media(max-width:640px){
+  .hero-headline{font-size:clamp(1.75rem,8vw,2.4rem)}
+  .hero-sub{font-size:.975rem}
+  .section{padding:64px 18px}
+  .section-thesis{padding:64px 18px}
+  .caps-grid{grid-template-columns:1fr}
+  .crypto-meta{grid-template-columns:1fr}
+  .hero-tags{display:none}
+}
+
+/* ================================================================
+   ENHANCEMENTS
+================================================================ */
+
+/* Hero network canvas */
+#hero-net{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;
+}
+
+/* Cursor glow */
+#cursor-glow{
+  pointer-events:none;position:fixed;
+  width:520px;height:520px;border-radius:50%;
+  left:0;top:0;margin-left:-260px;margin-top:-260px;
+  background:radial-gradient(circle,var(--gold-dim) 0%,transparent 65%);
+  z-index:0;opacity:0;
+  transition:opacity .5s ease;
+  will-change:transform;
+}
+
+/* Demo section */
+.section-demo{
+  border-top:1px solid var(--border);
+  background:var(--s1);
+  padding:64px 24px;
+  text-align:center;
+}
+.demo-inner{max-width:820px;margin:0 auto}
+.demo-eyebrow{
+  font-family:var(--f-mno);font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:12px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.demo-eyebrow::before,.demo-eyebrow::after{
+  content:'';flex:1;max-width:60px;height:1px;background:var(--gold-mid);
+}
+.demo-title{
+  font-family:var(--f-dis);font-weight:800;
+  font-size:clamp(1.3rem,3vw,2rem);
+  letter-spacing:-.03em;color:var(--text);
+  margin-bottom:8px;
+}
+.demo-sub{font-size:13px;color:var(--t2);margin-bottom:32px}
+.demo-layout{
+  display:grid;grid-template-columns:1fr 36px 1fr;
+  gap:0;align-items:center;margin-bottom:20px;
+}
+.demo-input-wrap{position:relative}
+.demo-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:14px;
+  font-family:var(--f-bdy);font-size:13px;color:var(--text);
+  resize:none;outline:none;line-height:1.6;
+  transition:border-color .2s,box-shadow .2s;
+}
+.demo-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+.demo-input::placeholder{color:var(--t3)}
+.demo-arrow{
+  font-size:18px;color:var(--t3);text-align:center;
+  transition:color .4s,transform .4s;
+}
+.demo-arrow.active{color:var(--gold)}
+.demo-output-wrap{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:14px;text-align:left;
+  min-height:94px;display:flex;flex-direction:column;justify-content:center;
+  transition:border-color .4s,box-shadow .4s;
+}
+.demo-output-wrap.has-content{
+  border-color:rgba(74,222,128,.4);
+  box-shadow:0 0 0 3px var(--green-dim);
+}
+.demo-prefix{
+  font-family:var(--f-mno);font-size:8.5px;color:var(--t2);
+  display:block;margin-bottom:5px;opacity:.55;
+}
+.demo-payload{
+  font-family:var(--f-mno);font-size:9px;color:var(--t2);
+  word-break:break-all;line-height:1.55;
+  transition:color .3s;
+}
+.demo-payload.sealed{color:var(--green)}
+.demo-note{
+  font-family:var(--f-mno);font-size:7.5px;color:var(--t2);
+  opacity:.45;margin-top:8px;border-top:1px solid var(--border);
+  padding-top:6px;
+}
+.demo-zero{
+  font-family:var(--f-mno);font-size:11px;color:var(--t2);
+  opacity:.7;display:inline-flex;align-items:center;gap:6px;
+}
+.demo-zero-num{
+  color:var(--green);font-size:1.25rem;font-family:var(--f-dis);
+  font-weight:800;
+}
+@media(max-width:640px){
+  .demo-layout{grid-template-columns:1fr;gap:10px}
+  .demo-arrow{transform:rotate(90deg)}
+}
+
+/* Cap card — diagonal shine on hover */
+.cap{overflow:hidden;position:relative}
+.cap::after{
+  content:'';position:absolute;
+  top:-60%;left:-60%;width:35%;height:220%;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.12) 50%,transparent 60%);
+  transform:translateX(-200%);
+  transition:transform .65s ease;
+}
+.cap:hover::after{transform:translateX(700%)}
+
+/* CTA glow */
+.section-cta{position:relative;overflow:hidden}
+.cta-glow{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 55% 60% at 50% 110%,rgba(201,169,110,0.28),transparent 70%);
+  animation:cta-breathe 5s ease-in-out infinite;
+}
+.cta-inner{position:relative;z-index:1}
+@keyframes cta-breathe{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* Scramble — prevent layout shift on load */
+.hero-headline{word-break:break-word;min-height:1em}
+  </style>
+</head>
+<body>
+
+  <div id="cursor-glow" aria-hidden="true"></div>
+  <div id="sprogress" aria-hidden="true"></div>
+
+  <!-- Mobile menu -->
+  <div class="mobile-nav" id="mobile-nav" role="dialog" aria-label="Navigation" aria-modal="true">
+    <button class="mobile-nav__close" id="menu-close" aria-label="Close menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <a href="#protocol"     onclick="closeMobileMenu()">How It Works</a>
+    <a href="#cryptography" onclick="closeMobileMenu()">Cryptography</a>
+    <a href="#capabilities" onclick="closeMobileMenu()">Capabilities</a>
+    <a href="#setup"        onclick="closeMobileMenu()">Setup</a>
+    <a href="https://github.com/Cryptic-Mage/helucryptic" target="_blank" rel="noopener" style="color:var(--gold);font-size:1rem;margin-top:4px">GitHub</a>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav" role="banner">
+    <nav class="nav__inner" aria-label="Main navigation">
+
+      <a href="#" class="nav__brand" aria-label="helucryptic home" id="nav-brand-link">
+        <div class="nav__logo" id="lock-icon-btn" aria-hidden="true" style="cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 018 0v4"/>
+            <circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav__name">helucryptic</span>
+          <span class="nav__ver">P2P · E2EE · <span id="ver-nav">v1.0.6</span></span>
+        </div>
+      </a>
+
+      <ul class="nav__links">
+        <li><a href="#protocol">How It Works</a></li>
+        <li><a href="#cryptography">Cryptography</a></li>
+        <li><a href="#capabilities">Capabilities</a></li>
+        <li><a href="#setup">Setup</a></li>
+      </ul>
+
+      <div class="nav__actions">
+        <button class="nav__btn" id="theme-toggle" aria-label="Toggle theme">
+          <svg id="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          <svg id="icon-sun"  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+
+        <a href="https://github.com/Cryptic-Mage/helucryptic" target="_blank" rel="noopener" class="nav__gh" aria-label="GitHub repository">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z"/></svg>
+          <div>
+            <span class="nav__gh-meta">
+              <span id="gh-api-dot" style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--border);margin-right:4px;vertical-align:middle"></span>GitHub
+            </span>
+            <span class="nav__gh-count">&#9733; <span id="github-stars">—</span> &nbsp;&#8910; <span id="github-forks">—</span></span>
+          </div>
+        </a>
+
+        <button class="nav__hamburger" id="menu-open" aria-label="Open menu" aria-expanded="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- =====================================================
+         HERO — static, no canvas
+    ===================================================== -->
+    <section class="scene-hero" id="hero" aria-label="Hero">
+      <canvas id="hero-net" aria-hidden="true"></canvas>
+      <div class="hero-fade"  aria-hidden="true"></div>
+
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span id="ver-hero">v1.0.6</span> &nbsp;·&nbsp; <span id="ver-date">June 2026</span> &nbsp;·&nbsp; Apache-2.0
+      </div>
+
+      <h1 class="hero-headline">The server forgets you the moment you've shaken hands.</h1>
+
+      <p class="hero-sub">
+        A desktop messenger that routes every conversation directly between machines.
+        No relay stores your messages. No infrastructure remembers your keys.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="#protocol" class="btn btn-solid">How It Works</a>
+        <a href="https://github.com/Cryptic-Mage/helucryptic" target="_blank" rel="noopener" class="btn btn-outline">GitHub</a>
+      </div>
+
+      <div class="hero-tags" aria-hidden="true">
+        <span class="hero-tag">WebRTC P2P</span>
+        <span class="hero-tag">PASETO v4</span>
+        <span class="hero-tag">X25519 ECDH</span>
+        <span class="hero-tag">Ed25519 Identity</span>
+        <span class="hero-tag">Apache-2.0</span>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         ENCRYPTION DEMO
+    ===================================================== -->
+    <section class="section-demo" id="demo" aria-labelledby="demo-title">
+      <div class="demo-inner reveal">
+        <div class="demo-eyebrow">Try It</div>
+        <h2 class="demo-title" id="demo-title">Type a message. Watch it seal.</h2>
+        <p class="demo-sub">Every character you type is encrypted before it leaves your machine. Nothing reaches any server.</p>
+        <div class="demo-layout">
+          <div class="demo-input-wrap">
+            <textarea class="demo-input" id="demo-input" placeholder="Hello, Bob…" maxlength="140" rows="4" aria-label="Message to encrypt"></textarea>
+          </div>
+          <div class="demo-arrow" id="demo-arrow" aria-hidden="true">→</div>
+          <div class="demo-output-wrap" id="demo-output-wrap">
+            <span class="demo-prefix">v4.local.</span>
+            <span class="demo-payload" id="demo-payload">start typing to seal a message…</span>
+            <span class="demo-note">XChaCha20-Poly1305 AEAD · 192-bit nonce · HMAC-SHA512 tag · PASETO v4.local</span>
+          </div>
+        </div>
+        <p class="demo-zero">
+          <span class="demo-zero-num" id="demo-bytes">0</span>
+          bytes retained on any server
+        </p>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         THESIS
+    ===================================================== -->
+    <section class="section-thesis" id="thesis">
+      <div class="thesis-inner">
+        <p class="thesis-graf" id="thesis-text">
+          <span class="thesis-word">Every</span>
+          <span class="thesis-word">message</span>
+          <span class="thesis-word">you've</span>
+          <span class="thesis-word">ever</span>
+          <span class="thesis-word">sent</span>
+          <span class="thesis-word">traveled</span>
+          <span class="thesis-word">through</span>
+          <span class="thesis-word">a</span>
+          <span class="thesis-word">computer</span>
+          <span class="thesis-word">you</span>
+          <span class="thesis-word">don't</span>
+          <span class="thesis-word">own.</span>
+          <br><br>
+          <span class="thesis-word">helucryptic</span>
+          <span class="thesis-word">is</span>
+          <span class="thesis-word">built</span>
+          <span class="thesis-word">on</span>
+          <span class="thesis-word">a</span>
+          <span class="thesis-word">different</span>
+          <span class="thesis-word">assumption.</span>
+        </p>
+        <p class="thesis-aside">
+          The signaling server's sole job is to introduce two peers. Once they've found each other,
+          it steps aside. There is no infrastructure that remembers your conversations. No stored messages.
+          No retained metadata. Just two machines, speaking directly.
+        </p>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         PROTOCOL — scroll-driven architecture walkthrough
+    ===================================================== -->
+    <section class="scene-arch" id="protocol" aria-label="Protocol walkthrough">
+      <div class="scene-arch__pin">
+
+        <div class="arch-canvas-wrap">
+          <canvas id="arch-canvas" aria-hidden="true"></canvas>
+
+          <div class="arch-mobile-card" id="arch-mobile-card" aria-live="polite">
+            <div class="arch-mobile-card__num"   id="mob-step-num">Step 01 of 05</div>
+            <div class="arch-mobile-card__title" id="mob-step-title">Two Machines</div>
+            <div class="arch-mobile-card__body"  id="mob-step-body">helucryptic runs as a native desktop application on both machines. No shared service stores your messages.</div>
+          </div>
+        </div>
+
+        <div class="arch-panel" aria-label="Protocol steps">
+          <div class="arch-panel__track" aria-hidden="true">
+            <div class="arch-panel__fill" id="arch-fill"></div>
+          </div>
+
+          <div class="arch-step is-active" data-step="0">
+            <!-- Mobile illustration: two isolated nodes pulsing — no connection yet -->
+            <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="40" r="18" class="illo-na illo-pa"/>
+              <line x1="43" y1="40" x2="57" y2="40" class="illo-ta"/>
+              <circle cx="190" cy="40" r="18" class="illo-nb illo-pb"/>
+              <line x1="183" y1="40" x2="197" y2="40" class="illo-tb"/>
+              <text x="50" y="68" class="illo-lbl">Alice</text>
+              <text x="50" y="79" class="illo-sub">client.py</text>
+              <text x="190" y="68" class="illo-lbl">Bob</text>
+              <text x="190" y="79" class="illo-sub">client.py</text>
+            </svg></div>
+            <div class="arch-step__num">Step 01 of 05</div>
+            <h2 class="arch-step__title">Two Machines</h2>
+            <p class="arch-step__body">helucryptic runs as a native desktop application on both machines. No shared service stores your messages. No central authority mediates your conversations.</p>
+            <span class="arch-step__tag">Flet · Python · aiortc</span>
+          </div>
+
+          <div class="arch-step" data-step="1">
+            <!-- Mobile illustration: server.py routes SDP — dashed arcs, packet A→S→B and return -->
+            <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="50" y1="55" x2="120" y2="18" class="illo-sg illo-df"/>
+              <line x1="120" y1="18" x2="190" y2="55" class="illo-sg illo-df"/>
+              <circle r="3.5" class="illo-pp"><animateMotion path="M50,55 L120,18 L190,55" dur="2.2s" repeatCount="indefinite" calcMode="linear"/></circle>
+              <circle r="3" class="illo-pp" opacity=".5"><animateMotion path="M190,55 L120,18 L50,55" dur="2.2s" begin="1.1s" repeatCount="indefinite" calcMode="linear"/></circle>
+              <circle cx="120" cy="18" r="10" class="illo-ns"/>
+              <line x1="114" y1="18" x2="126" y2="18" class="illo-ts"/>
+              <circle cx="50" cy="55" r="15" class="illo-na"/>
+              <line x1="44" y1="55" x2="56" y2="55" class="illo-ta"/>
+              <circle cx="190" cy="55" r="15" class="illo-nb"/>
+              <line x1="184" y1="55" x2="196" y2="55" class="illo-tb"/>
+              <text x="120" y="36" class="illo-srv">server.py</text>
+              <text x="50" y="79" class="illo-lbl">Alice</text>
+              <text x="190" y="79" class="illo-lbl">Bob</text>
+            </svg></div>
+            <div class="arch-step__num">Step 02 of 05</div>
+            <h2 class="arch-step__title">Signal</h2>
+            <p class="arch-step__body">A minimal FastAPI server brokers one exchange. It routes the SDP session description from Alice to Bob. One offer, one answer. That is the full extent of its role.</p>
+            <span class="arch-step__tag">FastAPI · WebSocket · SDP</span>
+          </div>
+
+          <div class="arch-step" data-step="2">
+            <!-- Mobile illustration: direct P2P wire open, no server, packets flowing both ways -->
+            <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="68" y1="40" x2="172" y2="40" class="illo-wp"/>
+              <circle r="3.5" class="illo-pp"><animateMotion path="M50,40 L190,40" dur="1.8s" repeatCount="indefinite"/></circle>
+              <circle r="3.5" class="illo-pp" opacity=".55"><animateMotion path="M190,40 L50,40" dur="1.8s" begin="0.9s" repeatCount="indefinite"/></circle>
+              <circle cx="50" cy="40" r="18" class="illo-na"/>
+              <line x1="43" y1="40" x2="57" y2="40" class="illo-ta"/>
+              <circle cx="190" cy="40" r="18" class="illo-nb"/>
+              <line x1="183" y1="40" x2="197" y2="40" class="illo-tb"/>
+              <text x="50" y="68" class="illo-lbl">Alice</text>
+              <text x="50" y="79" class="illo-sub">client.py</text>
+              <text x="190" y="68" class="illo-lbl">Bob</text>
+              <text x="190" y="79" class="illo-sub">client.py</text>
+            </svg></div>
+            <div class="arch-step__num">Step 03 of 05</div>
+            <h2 class="arch-step__title">Connect</h2>
+            <p class="arch-step__body">Both peers gather network addresses via STUN. ICE candidates are exchanged. A direct UDP path opens between the machines. The server is no longer involved.</p>
+            <span class="arch-step__tag">WebRTC · STUN · TURN · NAT-PMP</span>
+          </div>
+
+          <div class="arch-step" data-step="3">
+            <!-- Mobile illustration: X25519 ECDH — both peers send keys simultaneously; diamond = shared secret -->
+            <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="68" y1="40" x2="172" y2="40" class="illo-wp"/>
+              <circle r="3.5" class="illo-pp"><animateMotion path="M50,40 L190,40" dur="1.6s" repeatCount="indefinite"/></circle>
+              <circle r="3.5" class="illo-pp"><animateMotion path="M190,40 L50,40" dur="1.6s" repeatCount="indefinite"/></circle>
+              <polygon points="120,34 128,40 120,46 112,40" style="fill:var(--s2);stroke:var(--ic-p);stroke-width:1.3" class="illo-bt"/>
+              <circle cx="50" cy="40" r="18" class="illo-na"/>
+              <line x1="43" y1="40" x2="57" y2="40" class="illo-ta"/>
+              <circle cx="190" cy="40" r="18" class="illo-nb"/>
+              <line x1="183" y1="40" x2="197" y2="40" class="illo-tb"/>
+              <text x="50" y="68" class="illo-lbl">Alice</text>
+              <text x="50" y="79" class="illo-sub">client.py</text>
+              <text x="190" y="68" class="illo-lbl">Bob</text>
+              <text x="190" y="79" class="illo-sub">client.py</text>
+            </svg></div>
+            <div class="arch-step__num">Step 04 of 05</div>
+            <h2 class="arch-step__title">Agree</h2>
+            <p class="arch-step__body">Peers run X25519 ECDH in-channel to derive a shared session key via HKDF-SHA256. Ed25519 cross-signatures authenticate both sides.</p>
+            <span class="arch-step__tag">X25519 · HKDF-SHA256 · Ed25519</span>
+          </div>
+
+          <div class="arch-step" data-step="4">
+            <!-- Mobile illustration: PASETO v4 / XChaCha20 — green encrypted packets, lock at center -->
+            <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="68" y1="40" x2="172" y2="40" class="illo-wk"/>
+              <circle r="3.5" class="illo-pk"><animateMotion path="M50,40 L190,40" dur="1.4s" repeatCount="indefinite"/></circle>
+              <circle r="3.5" class="illo-pk"><animateMotion path="M190,40 L50,40" dur="1.4s" repeatCount="indefinite"/></circle>
+              <rect x="113" y="36" width="14" height="10" rx="2" style="fill:var(--s2);stroke:var(--ic-k);stroke-width:1.2" class="illo-bt"/>
+              <path d="M116,36 Q116,31 120,31 Q124,31 124,36" style="stroke:var(--ic-k);stroke-width:1.2;fill:none;stroke-linecap:round" class="illo-bt"/>
+              <circle cx="50" cy="40" r="18" class="illo-na"/>
+              <line x1="43" y1="40" x2="57" y2="40" class="illo-ta"/>
+              <circle cx="190" cy="40" r="18" class="illo-nb"/>
+              <line x1="183" y1="40" x2="197" y2="40" class="illo-tb"/>
+              <text x="50" y="68" class="illo-lbl">Alice</text>
+              <text x="50" y="79" class="illo-sub">client.py</text>
+              <text x="190" y="68" class="illo-lbl">Bob</text>
+              <text x="190" y="79" class="illo-sub">client.py</text>
+            </svg></div>
+            <div class="arch-step__num">Step 05 of 05</div>
+            <h2 class="arch-step__title">Seal</h2>
+            <p class="arch-step__body">PASETO v4 with XChaCha20-Poly1305 AEAD seals every packet. A tampered or replayed packet is rejected immediately. Nothing passes in plaintext.</p>
+            <span class="arch-step__tag">PASETO v4.local · XChaCha20-Poly1305</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =====================================================
+         CAPABILITIES
+    ===================================================== -->
+    <section class="section section-caps" id="capabilities" aria-labelledby="caps-title">
+      <div class="sec-header reveal">
+        <div class="eyebrow">What travels directly</div>
+        <h2 class="sec-title" id="caps-title">Everything. No exceptions.</h2>
+        <p class="sec-body">Every capability routes peer-to-peer. No feature requires a server to process your content.</p>
+      </div>
+
+      <div class="caps-grid reveal reveal--d1">
+        <div class="cap">
+          <span class="cap__badge">JSON · SCTP</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h3 class="cap__title">Encrypted Text Chat</h3>
+          <p class="cap__body">PASETO v4 encrypted messages over WebRTC DataChannels. One-to-one or group sessions with up to four participants.</p>
+        </div>
+
+        <div class="cap">
+          <span class="cap__badge">Opus · 48kHz</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <h3 class="cap__title">Voice Calls</h3>
+          <p class="cap__body">Opus audio at 48kHz mono, streamed peer-to-peer. No server transcoding. No third-party relay unless TURN fallback is required.</p>
+        </div>
+
+        <div class="cap">
+          <span class="cap__badge">15fps · VP8</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="13" rx="2"/><path d="M12 16v4M8 20h8"/></svg>
+          </div>
+          <h3 class="cap__title">Screen Sharing</h3>
+          <p class="cap__body">Primary monitor capture at 15fps with system audio, streamed directly to your peer through encrypted media channels.</p>
+        </div>
+
+        <div class="cap">
+          <span class="cap__badge">SHA-256 · 4GB</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <h3 class="cap__title">File Transfer</h3>
+          <p class="cap__body">Disk-to-disk direct streaming with automatic backpressure management. SHA-256 integrity verification. Files up to 4GB.</p>
+        </div>
+
+        <div class="cap">
+          <span class="cap__badge">Ed25519</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          </div>
+          <h3 class="cap__title">Identity Verification</h3>
+          <p class="cap__body">Ed25519 fingerprint comparison with visual status. Green for verified contacts, amber for unverified. Impersonation is structurally prevented.</p>
+        </div>
+
+        <div class="cap">
+          <span class="cap__badge">STUN · TURN · NAT-PMP</span>
+          <div class="cap__ico" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><path d="M2 12h20"/></svg>
+          </div>
+          <h3 class="cap__title">NAT Traversal</h3>
+          <p class="cap__body">STUN candidate gathering, TURN relay fallback, and NAT-PMP automatic port mapping. Works across restrictive home and enterprise networks.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         CRYPTO EXPLORER
+    ===================================================== -->
+    <section class="section section-crypto" id="cryptography" aria-labelledby="crypto-title">
+      <div class="sec-header reveal">
+        <div class="eyebrow eyebrow--gold">Security Architecture</div>
+        <h2 class="sec-title" id="crypto-title">Five layers. No shortcuts.</h2>
+        <p class="sec-body">Select a layer to inspect the primitives, the RFC basis, and the exact security property it provides.</p>
+      </div>
+
+      <div class="crypto-layout reveal reveal--d1">
+        <nav class="crypto-nav" aria-label="Cryptographic layers">
+
+          <button onclick="showCrypto('keyAgreement')" id="btn-keyAgreement" class="crypto-btn is-active">
+            <div class="crypto-btn__ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+            <div><span class="crypto-btn__n">Key Agreement</span><span class="crypto-btn__s">Ephemeral X25519 ECDH</span></div>
+          </button>
+
+          <button onclick="showCrypto('identity')" id="btn-identity" class="crypto-btn">
+            <div class="crypto-btn__ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div><span class="crypto-btn__n">Identity Verification</span><span class="crypto-btn__s">Ed25519 Signatures</span></div>
+          </button>
+
+          <button onclick="showCrypto('messageEnc')" id="btn-messageEnc" class="crypto-btn">
+            <div class="crypto-btn__ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+            <div><span class="crypto-btn__n">Message Encryption</span><span class="crypto-btn__s">PASETO v4.local AEAD</span></div>
+          </button>
+
+          <button onclick="showCrypto('historyRest')" id="btn-historyRest" class="crypto-btn">
+            <div class="crypto-btn__ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <div><span class="crypto-btn__n">History at Rest</span><span class="crypto-btn__s">Encrypted SQLite</span></div>
+          </button>
+
+          <button onclick="showCrypto('keystore')" id="btn-keystore" class="crypto-btn">
+            <div class="crypto-btn__ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <div><span class="crypto-btn__n">Identity Protection</span><span class="crypto-btn__s">OS Keystore · DPAPI</span></div>
+          </button>
+
+        </nav>
+
+        <div id="cryptoDetailsCard" class="crypto-card">
+          <div class="crypto-card__head">
+            <div class="chips">
+              <span class="chip chip--gold" id="cryptoPrimitive">X25519</span>
+              <span class="chip chip--neu"  id="cryptoRFC">RFC 7748</span>
+            </div>
+            <h3 class="crypto-card__title" id="cryptoTitle">Ephemeral X25519 Key Agreement</h3>
+            <p class="crypto-card__short"  id="cryptoShort">How helucryptic establishes a shared session secret between peers.</p>
+          </div>
+          <div class="crypto-card__body">
+            <div class="crypto-meta">
+              <div class="cmeta">
+                <div class="cmeta__l">Algorithm Stack</div>
+                <div class="cmeta__v" id="cryptoStack">X25519 + HKDF-SHA256</div>
+              </div>
+              <div class="cmeta">
+                <div class="cmeta__l">Security Property</div>
+                <div class="cmeta__v cmeta__v--g" id="cryptoDefense">Ephemeral Forward Secrecy</div>
+              </div>
+            </div>
+            <div>
+              <div class="clabel">Architecture Notes</div>
+              <p id="cryptoDesc">Before any payload is exchanged, both peers perform an in-channel X25519 Diffie-Hellman handshake to derive a shared session key via HKDF-SHA256. The key is unique to this session and never stored or reused. Compromise of a peer's long-term identity key does not expose previous sessions.</p>
+            </div>
+          </div>
+          <div class="crypto-card__foot">
+            <div class="cfoot-meta">
+              <span>Implementation Sample</span>
+              <span>Verified from source</span>
+            </div>
+            <div id="cryptoCode">session_key = HKDF(X25519(my_priv, peer_pub), salt, "helucryptic-v1")</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         SETUP
+    ===================================================== -->
+    <section class="section section-setup" id="setup" aria-labelledby="setup-title">
+      <div class="sec-header reveal">
+        <div class="eyebrow eyebrow--green">Get Running</div>
+        <h2 class="sec-title" id="setup-title">Up in four commands.</h2>
+        <p class="sec-body">Python 3.11 or later required. PortAudio is bundled on Windows. A pre-built Windows executable is available on the releases page.</p>
+      </div>
+
+      <div class="setup-layout reveal reveal--d1">
+        <div class="terminal-card">
+          <div class="terminal__bar">
+            <div class="terminal__dots" aria-hidden="true">
+              <div class="terminal__dot" style="background:#f87171"></div>
+              <div class="terminal__dot" style="background:#fbbf24"></div>
+              <div class="terminal__dot" style="background:#4ade80"></div>
+            </div>
+            <div class="terminal__tabs" role="tablist">
+              <button onclick="setOS('win')"   id="tab-win"   class="os-tab is-active" role="tab" aria-selected="true">Windows</button>
+              <button onclick="setOS('mac')"   id="tab-mac"   class="os-tab"           role="tab" aria-selected="false">macOS</button>
+              <button onclick="setOS('linux')" id="tab-linux" class="os-tab"           role="tab" aria-selected="false">Linux</button>
+            </div>
+            <button onclick="copyCode()" class="terminal__copy" aria-label="Copy commands">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span id="copy-txt">Copy</span>
+            </button>
+          </div>
+
+          <div class="terminal__body terminal-code" id="terminalBody">
+            <p class="cm"># Clone the repository</p>
+            <p><span class="fn">git clone</span> https://github.com/Cryptic-Mage/helucryptic.git</p>
+            <p><span class="fn">cd</span> helucryptic</p>
+            <p class="cm" style="margin-top:12px"># Create and activate a virtual environment</p>
+            <p><span class="fn">python</span> -m venv venv</p>
+            <p>.\venv\Scripts\<span class="fn">Activate.ps1</span></p>
+            <p class="cm" style="margin-top:12px"># Install all dependencies</p>
+            <p><span class="fn">pip install</span> -r requirements.txt</p>
+            <p class="cm" style="margin-top:12px"># Start the signaling server, then the client</p>
+            <p><span class="fn">uvicorn</span> server:app --host 127.0.0.1 --port 8000</p>
+            <p><span class="fn">python</span> main.py</p>
+          </div>
+
+          <div id="term-toast" class="terminal__toast" role="status">Copied to clipboard.</div>
+        </div>
+
+        <div class="env-card">
+          <div>
+            <div class="env-card__title">Runtime Configuration</div>
+            <p class="env-card__sub">Configure your peer node. The preview below updates as you type.</p>
+          </div>
+          <div>
+            <label for="env_sig" class="env-label">Signaling Server URL</label>
+            <input type="text" id="env_sig" oninput="updateEnv()" value="ws://127.0.0.1:8000" class="env-input" autocomplete="off">
+          </div>
+          <div>
+            <label for="env_dir" class="env-label">Data Directory</label>
+            <input type="text" id="env_dir" oninput="updateEnv()" value="~/.helucryptic" class="env-input" autocomplete="off">
+          </div>
+          <div class="env-row">
+            <div>
+              <strong>Low Performance Mode</strong>
+              <small>Reduces render overhead on slower machines</small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="env_lp" onchange="updateEnv()" aria-label="Low performance mode">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="env-out">
+            <div class="env-out-label">.env preview</div>
+            <div id="envOutputBlock">
+              <span style="color:var(--t2);opacity:.45"># helucryptic runtime configuration</span><br>
+              HELUCRYPTIC_SIGNALING_URL=<span style="color:var(--gold)" id="out_sig">ws://127.0.0.1:8000</span><br>
+              HELUCRYPTIC_DATA_DIR=<span style="color:var(--green)" id="out_dir">~/.helucryptic</span><br>
+              HELUCRYPTIC_LOW_PERF_MODE=<span style="color:var(--amber)" id="out_lp">False</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         OPEN SOURCE
+    ===================================================== -->
+    <section class="section section-oss" id="open-source" aria-labelledby="oss-title">
+      <div class="oss-layout reveal">
+        <div>
+          <div class="eyebrow eyebrow--gold">Open Source</div>
+          <h2 class="sec-title" id="oss-title">Inspect everything that protects you.</h2>
+          <p class="sec-body" style="margin-bottom:0">helucryptic is fully open source under Apache-2.0. Read the cryptographic implementation. Audit the signaling logic. Build from source.</p>
+
+          <div class="oss-stats">
+            <div><div class="oss-num" id="gh-stars-lg">—</div><div class="oss-lbl">Stars</div></div>
+            <div><div class="oss-num" id="gh-forks-lg">—</div><div class="oss-lbl">Forks</div></div>
+            <div><div class="oss-num" id="ver-oss">v1.0.6</div><div class="oss-lbl">Latest</div></div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="https://github.com/Cryptic-Mage/helucryptic" target="_blank" rel="noopener" class="btn btn-solid">View Repository</a>
+            <a href="https://github.com/Cryptic-Mage/helucryptic/releases/latest" target="_blank" rel="noopener" class="btn btn-outline" id="ver-dl-btn">Download v1.0.6</a>
+          </div>
+        </div>
+
+        <div class="oss-panel">
+          <div class="oss-panel-title">Source modules</div>
+          <div class="oss-links">
+            <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/client.py"        target="_blank" rel="noopener" class="oss-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>client.py <span class="oss-link__m">Flet UI · chat · contacts</span></a>
+            <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/webrtc_engine.py" target="_blank" rel="noopener" class="oss-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>webrtc_engine.py <span class="oss-link__m">P2P · media · files</span></a>
+            <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/server.py"        target="_blank" rel="noopener" class="oss-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>server.py <span class="oss-link__m">FastAPI · signaling</span></a>
+            <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/crypto.py"        target="_blank" rel="noopener" class="oss-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>crypto.py <span class="oss-link__m">PASETO · keys · identity</span></a>
+            <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/natpmp.py"        target="_blank" rel="noopener" class="oss-link"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>natpmp.py <span class="oss-link__m">NAT traversal</span></a>
+          </div>
+          <div class="oss-meta">
+            <div class="omr"><span class="omr__k">License</span><span class="omr__v">Apache-2.0</span></div>
+            <div class="omr"><span class="omr__k">Language</span><span class="omr__v">Python</span></div>
+            <div class="omr"><span class="omr__k">Latest Release</span><span class="omr__v omr__v--g" id="ver-omr">v1.0.6 · June 4, 2026</span></div>
+            <div class="omr"><span class="omr__k">Contact</span><span class="omr__v"><a href="mailto:crypticmage00@gmail.com" style="color:var(--t2);transition:color .18s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--t2)'">crypticmage00@gmail.com</a></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA — distinct from OSS section above -->
+    <section class="section-cta" aria-labelledby="cta-title">
+      <div class="cta-inner reveal">
+        <div class="eyebrow" style="text-align:center;margin-bottom:16px">Self-Hostable</div>
+        <h2 class="cta-title" id="cta-title">Run your own signaling server in minutes.</h2>
+        <p class="cta-body">The server is a single Python file. Deploy it anywhere you trust. helucryptic never requires a hosted relay you don't control.</p>
+        <div class="cta-btns">
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/server.py" target="_blank" rel="noopener" class="btn btn-solid">Read server.py</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/README.md" target="_blank" rel="noopener" class="btn btn-outline">Documentation</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- VIDEO FULLSCREEN TAKEOVER -->
+  <div id="video-modal" style="
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:#000;opacity:0;
+    transition:opacity 0.4s ease;
+  ">
+    <video id="lock-video" style="
+      position:absolute;inset:0;
+      width:100%;height:100%;
+      object-fit:cover;
+      display:block;
+    ">
+      <source src="../assets/hello_git.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <div class="footer-brand-ico" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/><circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <span class="footer-brand-name">helucryptic</span>
+        </div>
+        <p class="footer-desc">A peer-to-peer desktop messenger built on the premise that conversations should never pass through anyone else's machine.</p>
+        <div class="footer-contact">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <a href="mailto:crypticmage00@gmail.com">crypticmage00@gmail.com</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-label">Source</div>
+        <div class="footer-links">
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/client.py"        target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>client.py</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/webrtc_engine.py" target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>webrtc_engine.py</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/server.py"        target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>server.py</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/crypto.py"        target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>crypto.py</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-label">Project</div>
+        <div class="footer-links">
+          <a href="https://github.com/Cryptic-Mage/helucryptic"                        target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z"/></svg>GitHub</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/releases"               target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Releases</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/README.md"   target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Documentation</a>
+          <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/LICENSE"     target="_blank" rel="noopener"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>Apache-2.0</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">2026 helucryptic · Apache-2.0 · Open Source</span>
+      <div class="footer-legal">
+        <a href="https://github.com/Cryptic-Mage/helucryptic/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+        <a href="https://github.com/Cryptic-Mage/helucryptic" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================================================================
+       JAVASCRIPT
+  ================================================================ -->
+  <script>
+  "use strict";
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const norm  = (v, a, b)   => clamp((v - a) / (b - a), 0, 1);
+  const eio   = t => t < .5 ? 2*t*t : -1+(4-2*t)*t;
+  const eout  = t => 1 - (1-t)**3;
+  const lerp  = (a, b, t) => a + (b - a) * t;
+  const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+
+  // Arch canvas state — declared here so applyTheme can safely reference them
+  let archCtx, archW, archH;
+  let prevArchStep = -1;
+
+  // ── Theme toggle ─────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('helu-theme', theme);
+    $('#icon-moon').style.display = theme === 'dark' ? 'block' : 'none';
+    $('#icon-sun').style.display  = theme === 'dark' ? 'none'  : 'block';
+    // Force canvas redraw with new theme colours
+    if (archCtx) renderArch(sceneProgress(archSection));
+  }
+
+  (function initTheme() {
+    const saved = localStorage.getItem('helu-theme');
+    applyTheme(saved || 'dark');
+  })();
+
+  function encryptedTransition(callback) {
+    const ov = document.createElement('canvas');
+    const W = window.innerWidth, H = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    ov.width = W * dpr; ov.height = H * dpr;
+    ov.style.cssText = `position:fixed;top:0;left:0;width:${W}px;height:${H}px;z-index:99999;pointer-events:none;`;
+    document.body.appendChild(ov);
+    const ctx = ov.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const CHARS = '0123456789abcdefABCDEF+/=v4.local.paseto-x25519-ed25519-chacha';
+    const COL_W = 13, ROW_H = 15;
+    const COLS = Math.ceil(W / COL_W), ROWS = Math.ceil(H / ROW_H);
+    const cols = Array.from({length: COLS}, (_, i) => ({
+      delay: (i / COLS) * 0.55 + Math.random() * 0.06,
+      head: 0,
+      speed: 0.022 + Math.random() * 0.018,
+      chars: Array.from({length: ROWS}, () => CHARS[Math.floor(Math.random()*CHARS.length)])
+    }));
+
+    const GOLD = '#c9a96e', BLUE = '#1d4ed8';
+    let themeApplied = false, start = null;
+
+    function tick(ts) {
+      if (!start) start = ts;
+      const t = (ts - start) / 1000;
+
+      ctx.fillStyle = isDark() ? 'rgba(9,9,9,0.18)' : 'rgba(255,255,255,0.18)';
+      ctx.fillRect(0, 0, W, H);
+
+      let running = false;
+      cols.forEach((col, ci) => {
+        if (t < col.delay) { running = true; return; }
+        col.head = Math.min(col.head + col.speed, 1.05);
+        if (col.head < 1.05) running = true;
+
+        // refresh chars randomly
+        col.chars = col.chars.map(c => Math.random() < 0.15
+          ? CHARS[Math.floor(Math.random()*CHARS.length)] : c);
+
+        for (let ri = 0; ri < ROWS; ri++) {
+          const rowT = ri / ROWS;
+          const dist = col.head - rowT;
+          if (dist < 0) continue;
+          const alpha = dist < 0.12
+            ? dist / 0.12          // leading edge bright
+            : Math.max(0, 1 - (dist - 0.12) / 0.45);  // trail fade
+          if (alpha < 0.02) continue;
+
+          const accentColor = (isDark() !== themeApplied) ? GOLD : BLUE;
+          ctx.globalAlpha = dist < 0.04 ? Math.min(alpha * 1.8, 1) : alpha * 0.72;
+          ctx.fillStyle = dist < 0.06 ? '#ffffff' : accentColor;
+          ctx.font = `${dist < 0.06 ? 600 : 400} 10px JetBrains Mono,monospace`;
+          ctx.fillText(col.chars[ri], ci * COL_W + 2, ri * ROW_H + 12);
+        }
+      });
+      ctx.globalAlpha = 1;
+
+      // switch theme at 50% sweep
+      if (!themeApplied && t > 0.32) { themeApplied = true; callback(); }
+
+      if (running) {
+        requestAnimationFrame(tick);
+      } else {
+        ov.style.transition = 'opacity 0.28s ease';
+        ov.style.opacity = '0';
+        setTimeout(() => ov.remove(), 300);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ── Lock-opening transition (dark → light) ───────────────────────
+  function lockOpenTransition(callback) {
+    const ov  = document.createElement('canvas');
+    const W   = window.innerWidth, H = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    ov.width  = W * dpr; ov.height = H * dpr;
+    ov.style.cssText = `position:fixed;top:0;left:0;width:${W}px;height:${H}px;z-index:99999;pointer-events:none;`;
+    document.body.appendChild(ov);
+    const ctx = ov.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const cx = W / 2, cy = H / 2;
+    const CHARS = '0123456789abcdefABCDEF+/=paseto-v4-x25519-ed25519-chacha20';
+    const GOLD  = '#c9a96e', WHITE = '#ffffff';
+
+    // Radiating data streams that fire once the lock opens
+    const STREAM_COUNT = 28;
+    const streams = Array.from({length: STREAM_COUNT}, (_, i) => ({
+      angle:  (i / STREAM_COUNT) * Math.PI * 2 + (Math.random() - .5) * 0.18,
+      len:    0,
+      speed:  0.014 + Math.random() * 0.012,
+      delay:  0.38 + Math.random() * 0.12,
+      chars:  Array.from({length: 22}, () => CHARS[Math.floor(Math.random() * CHARS.length)])
+    }));
+
+    let applied = false, start = null;
+
+    function drawLock(t) {
+      const appear  = Math.min(1, t / 0.18);              // fade in
+      const openAmt = Math.min(1, Math.max(0, (t - 0.12) / 0.28)); // shackle opens
+      const BW = 50, BH = 40, BR = 9;
+
+      ctx.save();
+      ctx.globalAlpha = appear;
+
+      // Body shadow / glow
+      ctx.shadowColor = GOLD;
+      ctx.shadowBlur  = 18 * openAmt;
+
+      // Body fill
+      ctx.fillStyle   = 'rgba(9,9,9,0.92)';
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(cx - BW/2, cy + 2, BW, BH, BR);
+      ctx.fill(); ctx.stroke();
+
+      // Keyhole circle + stem
+      ctx.shadowBlur = 0;
+      ctx.fillStyle  = GOLD;
+      ctx.globalAlpha = appear * (0.5 + 0.5 * openAmt);
+      ctx.beginPath(); ctx.arc(cx, cy + 22, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(cx - 3, cy + 22, 6, 11);
+
+      // Shackle — rotates open around left anchor
+      ctx.globalAlpha = appear;
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = 3.5;
+      ctx.lineCap     = 'round';
+
+      const pivotX = cx - 14, pivotY = cy + 2;
+      const rot    = openAmt * -1.05; // ~60° counter-clockwise
+
+      ctx.save();
+      ctx.translate(pivotX, pivotY);
+      ctx.rotate(rot);
+      // left leg (stationary relative to pivot)
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -28); ctx.stroke();
+      // arc top
+      ctx.beginPath(); ctx.arc(14, -28, 14, Math.PI, 0, false); ctx.stroke();
+      // right leg — shortens as it pulls up and out
+      const rightLeg = 28 * (1 - openAmt * 0.55);
+      ctx.beginPath(); ctx.moveTo(28, -28); ctx.lineTo(28, -28 + rightLeg); ctx.stroke();
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    function tick(ts) {
+      if (!start) start = ts;
+      const t = (ts - start) / 1000;
+
+      // Clean slate each frame, then a single dark tint
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(9,9,9,0.82)';
+      ctx.fillRect(0, 0, W, H);
+
+      drawLock(t);
+
+      // ── Data streams fire after lock opens ──
+      if (t > 0.36) {
+        const maxR    = Math.hypot(W, H) * 0.72;
+        const SPACING = 16;
+        ctx.font = 'bold 11px JetBrains Mono,monospace';
+
+        streams.forEach(s => {
+          if (t < s.delay) return;
+
+          // Advance head position (0→1 over time)
+          s.len = Math.min(s.len + s.speed, 1);
+
+          const r      = s.len * maxR;
+          const nChars = Math.max(1, Math.floor(Math.min(r, 180) / SPACING));
+
+          // Occasionally mutate chars to feel "live"
+          if (Math.random() < 0.12)
+            s.chars[Math.floor(Math.random() * s.chars.length)] =
+              CHARS[Math.floor(Math.random() * CHARS.length)];
+
+          for (let i = 0; i < nChars; i++) {
+            const dist  = i * SPACING;
+            const px    = cx + Math.cos(s.angle) * (r - dist);
+            const py    = cy + Math.sin(s.angle) * (r - dist);
+            const fade  = 1 - i / nChars;           // 1 at head, 0 at tail
+            ctx.globalAlpha = i === 0 ? 1 : fade * 0.85;
+            ctx.fillStyle   = i === 0 ? WHITE : GOLD;
+            ctx.fillText(s.chars[i % s.chars.length], px - 5, py + 5);
+          }
+        });
+
+        ctx.globalAlpha = 1;
+      }
+
+      // Apply theme when lock pops open
+      if (!applied && t > 0.42) { applied = true; callback(); }
+
+      // Run until all streams fully extended + a short hold, then fade out
+      const allDone = t > 0.36 && streams.every(s => s.len >= 1);
+      if (allDone || t > 1.8) {
+        ov.style.transition = 'opacity 0.32s ease';
+        ov.style.opacity    = '0';
+        setTimeout(() => ov.remove(), 340);
+      } else {
+        requestAnimationFrame(tick);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  $('#theme-toggle').addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    if (next === 'light') lockOpenTransition(() => applyTheme(next));
+    else                  encryptedTransition(() => applyTheme(next));
+  });
+
+  // ── Mobile menu ──────────────────────────────────────────────────
+  const mobileNav = $('#mobile-nav');
+  $('#menu-open').addEventListener('click', () => {
+    mobileNav.style.display = 'flex';
+    requestAnimationFrame(() => mobileNav.classList.add('open'));
+    $('#menu-open').setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  });
+  $('#menu-close').addEventListener('click', closeMobileMenu);
+  function closeMobileMenu() {
+    mobileNav.classList.remove('open');
+    setTimeout(() => { mobileNav.style.display = 'none'; }, 220);
+    $('#menu-open').setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  // ── Scroll progress bar ──────────────────────────────────────────
+  function updateScrollProgress() {
+    const pct = window.scrollY / (document.documentElement.scrollHeight - innerHeight);
+    $('#sprogress').style.width = clamp(pct * 100, 0, 100) + '%';
+  }
+
+  // ── Reveal on scroll ─────────────────────────────────────────────
+  const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  $$('.reveal').forEach(el => revealObs.observe(el));
+
+  // ── Thesis word reveal ───────────────────────────────────────────
+  (function() {
+    const t = $('#thesis-text');
+    if (!t) return;
+    const words = $$('.thesis-word', t);
+    new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      words.forEach((w, i) => setTimeout(() => w.classList.add('lit'), i * 48));
+    }, { threshold: .15 }).observe(t);
+  })();
+
+  // ── GitHub stats ─────────────────────────────────────────────────
+  (async function() {
+    const dot = $('#gh-api-dot');
+    try {
+      const d = await (await fetch('https://api.github.com/repos/Cryptic-Mage/helucryptic', { cache: 'default' })).json();
+      if (!d.stargazers_count && d.stargazers_count !== 0) throw new Error();
+      const fmt = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+      const s = fmt(d.stargazers_count), f = fmt(d.forks_count);
+      $('#github-stars').textContent = s; $('#github-forks').textContent = f;
+      $('#gh-stars-lg').textContent  = s; $('#gh-forks-lg').textContent  = f;
+      if (dot) dot.style.background = 'var(--green)';
+    } catch {
+      if (dot) dot.style.background = 'var(--amber)';
+    }
+  })();
+
+  // ── GitHub latest release (dynamic version) ──────────────────────
+  (async function() {
+    try {
+      const rel = await (await fetch(
+        'https://api.github.com/repos/Cryptic-Mage/helucryptic/releases/latest',
+        { cache: 'default' }
+      )).json();
+      if (!rel.tag_name) return;
+      const tag  = rel.tag_name;                          // e.g. "v1.0.7"
+      const pub  = rel.published_at || '';
+      const date = pub ? new Date(pub).toLocaleDateString('en-US',
+        { month: 'long', year: 'numeric' }) : '';
+      const dateShort = pub ? new Date(pub).toLocaleDateString('en-US',
+        { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+
+      const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      const setAttr = (id, attr, val) => { const el = document.getElementById(id); if (el) el[attr] = val; };
+
+      setText('ver-nav',  tag);
+      setText('ver-hero', tag);
+      setText('ver-oss',  tag);
+      if (date)      setText('ver-date', date);
+      if (dateShort) setText('ver-omr', `${tag} · ${dateShort}`);
+      const dlBtn = document.getElementById('ver-dl-btn');
+      if (dlBtn) {
+        dlBtn.textContent = `Download ${tag}`;
+        dlBtn.href = `https://github.com/Cryptic-Mage/helucryptic/releases/tag/${encodeURIComponent(tag)}`;
+      }
+    } catch { /* keep static fallback */ }
+  })();
+
+
+
+  // ================================================================
+  // CANVAS UTILITIES
+  // ================================================================
+
+  function setupCanvas(canvas) {
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width  = Math.round(rect.width  * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    canvas.style.width  = rect.width  + 'px';
+    canvas.style.height = rect.height + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx, W: rect.width, H: rect.height };
+  }
+
+  function sceneProgress(section) {
+    if (!section) return 0;
+    const rect   = section.getBoundingClientRect();
+    const travel = section.offsetHeight - window.innerHeight;
+    if (travel <= 0) return 0;
+    return clamp(-rect.top / travel, 0, 1);
+  }
+
+  // ── Drawing primitives ───────────────────────────────────────────
+  function drawGrid(ctx, W, H) {
+    const step  = Math.max(28, Math.min(44, W / 22));
+    const color = isDark() ? 'rgba(255,255,255,0.018)' : 'rgba(0,0,0,0.022)';
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = .5;
+    for (let x = 0; x <= W; x += step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y <= H; y += step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function drawNode(ctx, x, y, r, color, alpha, label, sub, small) {
+    if (alpha < .005) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const gr = ctx.createRadialGradient(x,y,0,x,y,r*2.4);
+    gr.addColorStop(0, color+'30'); gr.addColorStop(1, color+'00');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(x,y,r*2.4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle   = isDark() ? '#090909' : '#faf6ee';
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = small ? 1 : 1.5;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    if (label) {
+      ctx.fillStyle    = isDark() ? '#f0f0ee' : '#1c1810';
+      ctx.font         = `600 ${small ? 9 : 11}px 'Plus Jakarta Sans',system-ui,sans-serif`;
+      ctx.textAlign    = 'center'; ctx.textBaseline = 'top';
+      ctx.globalAlpha  = alpha * .9;
+      ctx.fillText(label, x, y + r + 8);
+    }
+    if (sub) {
+      ctx.fillStyle    = isDark() ? '#949490' : '#5e5040';
+      ctx.font         = `9px 'JetBrains Mono',monospace`;
+      ctx.textAlign    = 'center'; ctx.textBaseline = 'top';
+      ctx.globalAlpha  = alpha * .6;
+      ctx.fillText(sub, x, y + r + 22);
+    }
+    ctx.restore();
+  }
+
+  function drawLine(ctx, x1, y1, x2, y2, color, alpha, dashed, width) {
+    if (alpha < .005) return;
+    ctx.save();
+    ctx.globalAlpha = alpha; ctx.strokeStyle = color;
+    ctx.lineWidth = width || 1.2; ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
+
+  function drawAnimLine(ctx, x1, y1, x2, y2, progress, color, alpha, width) {
+    const ex = lerp(x1,x2,progress), ey = lerp(y1,y2,progress);
+    drawLine(ctx, x1,y1,ex,ey, color, alpha, false, width);
+  }
+
+  function drawPacket(ctx, x1, y1, x2, y2, t, color, alpha, size) {
+    if (alpha < .01 || t < 0 || t > 1) return;
+    const px = x1+(x2-x1)*t, py = y1+(y2-y1)*t;
+    const r  = size || 4;
+    ctx.save();
+    for (let i = 0; i < 6; i++) {
+      const ti = Math.max(0, t-(6-i)*.013);
+      ctx.globalAlpha = alpha*(i/6)*.2;
+      ctx.fillStyle   = color;
+      ctx.beginPath(); ctx.arc(x1+(x2-x1)*ti, y1+(y2-y1)*ti, r*.6,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle   = color;
+    ctx.shadowColor = color; ctx.shadowBlur = 5;
+    ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawLockIcon(ctx, x, y, alpha, color) {
+    if (alpha < .01) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.fillStyle   = isDark() ? 'rgba(9,9,9,.95)' : 'rgba(250,246,238,.95)';
+    ctx.lineWidth   = 1.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.roundRect(x-9,y,18,13,3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x,y,6,Math.PI,0); ctx.stroke();
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.moveTo(x-3.5,y+6.5); ctx.lineTo(x-0.5,y+9.5); ctx.lineTo(x+4.5,y+3); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ================================================================
+  // ARCH — SCROLL-DRIVEN
+  // ================================================================
+
+  const ARCH_STEPS_DATA = [
+    { num:'Step 01 of 05', title:'Two Machines',  body:'helucryptic runs as a native desktop application on both machines. No shared service stores your messages.' },
+    { num:'Step 02 of 05', title:'Signal',        body:'A minimal FastAPI server routes the SDP offer. One offer, one answer. That is the full extent of its role.' },
+    { num:'Step 03 of 05', title:'Connect',       body:'ICE candidates are exchanged. A direct UDP path opens. The server is no longer in the picture.' },
+    { num:'Step 04 of 05', title:'Agree',         body:'X25519 ECDH derives a shared session key via HKDF-SHA256. Ed25519 authenticates both sides.' },
+    { num:'Step 05 of 05', title:'Seal',          body:'PASETO v4 with XChaCha20-Poly1305 AEAD seals every packet. Nothing passes in plaintext.' },
+  ];
+
+  function initArchCanvas() {
+    const canvas = $('#arch-canvas');
+    if (!canvas) return;
+    const { ctx, W, H } = setupCanvas(canvas);
+    archCtx = ctx; archW = W; archH = H;
+    renderArch(0);
+  }
+
+  function resizeArchCanvas() {
+    initArchCanvas(); // always reinit — avoids stale scale on resized context
+  }
+
+  function renderArch(progress) {
+    const ctx = archCtx, W = archW, H = archH;
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, W, H);
+
+    const mobile = W < 700;
+    const cx = W / 2, cy = H / 2;
+
+    // Cap horizontal draw zone so Alice↔Bob never spread wider than 600px
+    const drawW  = Math.min(W, 600);
+    const drawOX = (W - drawW) / 2;   // horizontal offset to centre the zone
+
+    // Node positions: slightly above vertical center
+    const nodeY  = cy - (mobile ? 15 : 20);
+    const srvY   = nodeY - (mobile ? 80 : 100);
+
+    const alicePos  = { x: drawOX + drawW * (mobile ? .15 : .17), y: nodeY };
+    const bobPos    = { x: drawOX + drawW * (mobile ? .85 : .83), y: nodeY };
+    const serverPos = { x: drawOX + drawW * .5, y: srvY };
+
+    const nodeR = mobile ? 20 : 26;
+    const srvR  = mobile ? 12 : 15;
+
+    const dark   = isDark();
+    const cAlice = dark ? '#a78bfa' : '#7c3aed';
+    const cBob   = dark ? '#c4b5fd' : '#8b5cf6';
+    const cSrv   = dark ? '#555553' : '#9a8a78';
+    const cPipe  = dark ? '#c9a96e' : '#8b6418';
+    const cSeal  = dark ? '#4ade80' : '#166534';
+    const cSig   = dark ? 'rgba(201,169,110,.45)' : 'rgba(139,100,24,.38)';
+
+    // Step 1: Alice + Bob appear
+    const aAlice = eio(norm(progress, .00, .08));
+    const aBob   = eio(norm(progress, .04, .12));
+    drawNode(ctx, alicePos.x, alicePos.y, nodeR, cAlice, aAlice, 'Alice', 'client.py');
+    drawNode(ctx, bobPos.x,   bobPos.y,   nodeR, cBob,   aBob,   'Bob',   'client.py');
+
+    // Step 2: Server + signaling lines (fades out before step 4)
+    const srvIn  = eio(norm(progress, .20, .30));
+    const srvOut = 1 - eio(norm(progress, .56, .66));
+    const aSrv   = Math.min(srvIn, srvOut);
+    if (aSrv > .01) {
+      drawNode(ctx, serverPos.x, serverPos.y, srvR, cSrv, aSrv * .85, 'server.py', 'FastAPI', true);
+      const aLine = eio(norm(progress, .22, .34)) * aSrv;
+      drawLine(ctx, alicePos.x, alicePos.y, serverPos.x, serverPos.y, cSig, aLine * .5, true);
+      drawLine(ctx, serverPos.x, serverPos.y, bobPos.x, bobPos.y, cSig, aLine * .5, true);
+      if (progress > .27 && progress < .44) {
+        const t  = (progress - .27) / .17;
+        const ap = eio(norm(progress, .27, .36));
+        drawPacket(ctx, alicePos.x, alicePos.y, serverPos.x, serverPos.y, t%1,      cPipe, ap * .7);
+        drawPacket(ctx, serverPos.x, serverPos.y, bobPos.x, bobPos.y,    (t+.5)%1,  cPipe, ap * .55);
+      }
+    }
+
+    // Step 3: Pipe forms from both sides toward center
+    const aConnect = eio(norm(progress, .40, .52));
+    if (aConnect > .01) {
+      const pp = eio(norm(progress, .42, .56));
+      const midX = (alicePos.x + bobPos.x) / 2;
+      const midY = (alicePos.y + bobPos.y) / 2;
+      drawAnimLine(ctx, alicePos.x, alicePos.y, midX, midY, pp, cPipe, aConnect * .6, 1.5);
+      drawAnimLine(ctx, bobPos.x,   bobPos.y,   midX, midY, pp, cPipe, aConnect * .6, 1.5);
+    }
+
+    // Step 4: Full pipe + key exchange
+    const aAgree = eio(norm(progress, .60, .70));
+    if (aAgree > .01) {
+      const pCol = progress > .80 ? cSeal : cPipe;
+      drawLine(ctx, alicePos.x, alicePos.y, bobPos.x, bobPos.y, pCol, aAgree * .65, false, 1.8);
+      const t = ((progress - .60) / .20) % 1;
+      drawPacket(ctx, alicePos.x, alicePos.y, bobPos.x, bobPos.y, t,        cPipe, aAgree * .7);
+      drawPacket(ctx, bobPos.x, bobPos.y, alicePos.x, alicePos.y, (t+.5)%1, cPipe, aAgree * .55);
+
+      // Key label fades out as step 5 approaches
+      const kla = aAgree * (1 - eio(norm(progress, .80, .90)));
+      if (kla > .02) {
+        ctx.save();
+        ctx.globalAlpha  = kla * .75;
+        ctx.fillStyle    = dark ? '#c9a96e' : '#8b6418';
+        ctx.font         = `500 ${mobile ? 8 : 9}px 'JetBrains Mono',monospace`;
+        ctx.textAlign    = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText('X25519 · HKDF-SHA256', cx, nodeY - 20);
+        ctx.restore();
+      }
+    }
+
+    // Step 5: Sealed pipe + PASETO lock
+    const aSeal = eio(norm(progress, .80, .90));
+    if (aSeal > .01) {
+      ctx.save(); ctx.shadowColor = cSeal; ctx.shadowBlur = 10;
+      drawLine(ctx, alicePos.x, alicePos.y, bobPos.x, bobPos.y, cSeal, aSeal * .75, false, 2.2);
+      ctx.restore();
+      const t = ((progress - .80) / .20) % 1;
+      drawPacket(ctx, alicePos.x, alicePos.y, bobPos.x, bobPos.y, t,          cSeal, aSeal * .8);
+      drawPacket(ctx, alicePos.x, alicePos.y, bobPos.x, bobPos.y, (t+.38)%1,  cSeal, aSeal * .5);
+      drawPacket(ctx, bobPos.x, bobPos.y, alicePos.x, alicePos.y, (t+.65)%1,  cSeal, aSeal * .45);
+      // Lock above pipe
+      drawLockIcon(ctx, cx, nodeY - 34, aSeal, cSeal);
+      if (aSeal > .45) {
+        ctx.save();
+        ctx.globalAlpha  = (aSeal - .45) / .55 * .8;
+        ctx.fillStyle    = dark ? '#4ade80' : '#166534';
+        ctx.font         = `500 ${mobile ? 8 : 9}px 'JetBrains Mono',monospace`;
+        ctx.textAlign    = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText('PASETO v4.local', cx, nodeY - 13);
+        ctx.restore();
+      }
+    }
+
+    updateArchStep(Math.min(4, Math.floor(progress * 5)), progress);
+  }
+
+  function updateArchStep(step, progress) {
+    if (step === prevArchStep) return;
+    prevArchStep = step;
+
+    $$('.arch-step').forEach((el, i) => el.classList.toggle('is-active', i === step));
+    const fill = $('#arch-fill');
+    if (fill) fill.style.height = (step / 4 * 100) + '%';
+
+    const d  = ARCH_STEPS_DATA[step];
+    if (!d) return;
+    const mc = $('#arch-mobile-card');
+    if (mc) {
+      mc.style.opacity = '0'; mc.style.transform = 'translateY(8px)';
+      setTimeout(() => {
+        $('#mob-step-num').textContent   = d.num;
+        $('#mob-step-title').textContent = d.title;
+        $('#mob-step-body').textContent  = d.body;
+        mc.style.opacity = '1'; mc.style.transform = 'translateY(0)';
+      }, 140);
+    }
+  }
+
+  // ================================================================
+  // RENDER LOOP
+  // ================================================================
+
+  const archSection = $('#protocol');
+  let lastScroll = -1;
+
+  function archLoop() {
+    requestAnimationFrame(archLoop);
+    const y = window.scrollY;
+    if (y === lastScroll) return;
+    lastScroll = y;
+    updateScrollProgress();
+    // Lazy-init: if archCtx was never set (or canvas reset to default 300×150), try now
+    if (!archCtx) initArchCanvas();
+    renderArch(sceneProgress(archSection));
+  }
+
+  // ================================================================
+  // INIT
+  // ================================================================
+
+  document.addEventListener('DOMContentLoaded', () => {
+    archLoop();
+    window.addEventListener('scroll', updateScrollProgress, { passive: true });
+  });
+
+  // Init canvas after layout has stabilised (double rAF ensures a full paint cycle)
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        initArchCanvas();
+      });
+    });
+  });
+
+  // Debounced resize handler — avoids the immediate-fire issue of ResizeObserver
+  let _archResizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_archResizeTimer);
+    _archResizeTimer = setTimeout(initArchCanvas, 200);
+  }, { passive: true });
+
+  // ================================================================
+  // CRYPTO EXPLORER
+  // ================================================================
+
+  const cryptoData = {
+    keyAgreement: {
+      primitive:'X25519', rfc:'RFC 7748',
+      title:'Ephemeral X25519 Key Agreement',
+      short:'How helucryptic establishes a shared session secret between peers.',
+      stack:'X25519 + HKDF-SHA256', defense:'Ephemeral Forward Secrecy',
+      desc:'Before any payload is exchanged, both peers perform an in-channel X25519 Diffie-Hellman handshake to derive a shared session key via HKDF-SHA256. The key is unique to this session and never stored or reused. Compromise of a long-term identity key does not expose previous sessions.',
+      code:'session_key = HKDF(X25519(my_priv, peer_pub), salt, "helucryptic-v1")'
+    },
+    identity: {
+      primitive:'Ed25519', rfc:'RFC 8032',
+      title:'Persistent Identity Verification',
+      short:'Binding peer endpoints to authenticated cryptographic identities.',
+      stack:'Ed25519 via PASETO v4.public', defense:'MITM-Resistant Authentication',
+      desc:'Each helucryptic node holds a long-term Ed25519 keypair stored in the OS keystore. The ephemeral X25519 key exchanged during the handshake is cross-signed by this identity key. Users compare hex fingerprints out-of-band to verify authenticity before trusting a contact.',
+      code:'is_valid = ed25519_verify(peer_pub, signed_sdp_offer, signature)'
+    },
+    messageEnc: {
+      primitive:'PASETO v4.local', rfc:'XChaCha20-Poly1305',
+      title:'Message Stream Encryption',
+      short:'Authenticated encryption of every payload: text, voice, and file chunks.',
+      stack:'XChaCha20-Poly1305 + Blake2b', defense:'Authenticated Encryption (AEAD)',
+      desc:'Messages are packaged in PASETO v4.local envelopes using XChaCha20-Poly1305 AEAD. Unlike raw AES-GCM, PASETO enforces a strict versioned format with implicit assertions, making length-extension attacks and format confusion structurally impossible at the protocol level.',
+      code:'token = paseto.encrypt(session_key, json.dumps(payload))'
+    },
+    historyRest: {
+      primitive:'SQLite · WAL', rfc:'SQLCipher / PBKDF2',
+      title:'Encrypted History at Rest',
+      short:'Local message history protected against physical storage access.',
+      stack:'SQLite3 + derived key (XChaCha20)', defense:'Cold-Boot Resilient',
+      desc:"Message history is stored in a local SQLite database (WAL mode). The encryption key is derived from the node's identity keypair on launch and never stored independently. Physical access to the database file yields ciphertext without the running node present.",
+      code:"db.execute('PRAGMA key = \"' + derived_db_key + '\"')"
+    },
+    keystore: {
+      primitive:'OS Keystore', rfc:'DPAPI / Keychain',
+      title:'Identity Key Protection',
+      short:'Private keys delegated to the operating system secure storage.',
+      stack:'Windows DPAPI · macOS Keychain', defense:'Non-Exportable Key Isolation',
+      desc:"The long-term Ed25519 private key is wrapped by the OS native key protection layer: DPAPI on Windows, Keychain on macOS. The raw key material is never written to disk unprotected. Signing operations require user session presence.",
+      code:'wrapped = win32crypt.CryptProtectData(raw_ed25519_private_bytes)'
+    }
+  };
+
+  function showCrypto(key) {
+    $$('.crypto-btn').forEach(b => b.classList.remove('is-active'));
+    const btn = $('#btn-' + key);
+    if (btn) btn.classList.add('is-active');
+    const card = $('#cryptoDetailsCard');
+    if (!card) return;
+    card.style.opacity = '0'; card.style.transform = 'translateY(5px)';
+    setTimeout(() => {
+      const d = cryptoData[key];
+      $('#cryptoPrimitive').textContent = d.primitive;
+      $('#cryptoRFC').textContent       = d.rfc;
+      $('#cryptoTitle').textContent     = d.title;
+      $('#cryptoShort').textContent     = d.short;
+      $('#cryptoStack').textContent     = d.stack;
+      $('#cryptoDefense').textContent   = d.defense;
+      $('#cryptoDesc').textContent      = d.desc;
+      $('#cryptoCode').textContent      = d.code;
+      card.style.opacity = '1'; card.style.transform = 'translateY(0)';
+    }, 150);
+  }
+
+  // ================================================================
+  // TERMINAL
+  // ================================================================
+
+  const terminalCmds = {
+    win:`<p class="cm"># Clone the repository</p>
+<p><span class="fn">git clone</span> https://github.com/Cryptic-Mage/helucryptic.git</p>
+<p><span class="fn">cd</span> helucryptic</p>
+<p class="cm" style="margin-top:12px"># Create and activate a virtual environment</p>
+<p><span class="fn">python</span> -m venv venv</p>
+<p>.\\venv\\Scripts\\<span class="fn">Activate.ps1</span></p>
+<p class="cm" style="margin-top:12px"># Install all dependencies</p>
+<p><span class="fn">pip install</span> -r requirements.txt</p>
+<p class="cm" style="margin-top:12px"># Start the signaling server, then the client</p>
+<p><span class="fn">uvicorn</span> server:app --host 127.0.0.1 --port 8000</p>
+<p><span class="fn">python</span> main.py</p>`,
+    mac:`<p class="cm"># Install system audio and codec libraries first</p>
+<p><span class="fn">brew install</span> portaudio ffmpeg opus</p>
+<p class="cm" style="margin-top:12px"># Clone and set up</p>
+<p><span class="fn">git clone</span> https://github.com/Cryptic-Mage/helucryptic.git</p>
+<p><span class="fn">cd</span> helucryptic</p>
+<p><span class="fn">python3</span> -m venv venv && <span class="fn">source</span> venv/bin/activate</p>
+<p class="cm" style="margin-top:12px"># Install and run</p>
+<p><span class="fn">pip3 install</span> -r requirements.txt</p>
+<p><span class="fn">uvicorn</span> server:app --host 127.0.0.1 --port 8000</p>
+<p><span class="fn">python3</span> main.py</p>`,
+    linux:`<p class="cm"># Install system dependencies</p>
+<p><span class="fn">sudo apt-get install</span> -y build-essential python3-dev ffmpeg libopus-dev portaudio19-dev</p>
+<p class="cm" style="margin-top:12px"># Clone and configure</p>
+<p><span class="fn">git clone</span> https://github.com/Cryptic-Mage/helucryptic.git && <span class="fn">cd</span> helucryptic</p>
+<p><span class="fn">python3</span> -m venv venv && <span class="fn">source</span> venv/bin/activate</p>
+<p><span class="fn">pip3 install</span> -r requirements.txt</p>
+<p class="cm" style="margin-top:12px"># Launch</p>
+<p><span class="fn">uvicorn</span> server:app --host 127.0.0.1 --port 8000</p>
+<p><span class="fn">python3</span> main.py</p>`
+  };
+
+  function setOS(os) {
+    $$('.os-tab').forEach(t => { t.classList.remove('is-active'); t.setAttribute('aria-selected','false'); });
+    const tab = $('#tab-' + os);
+    if (tab) { tab.classList.add('is-active'); tab.setAttribute('aria-selected','true'); }
+    const body = $('#terminalBody');
+    if (!body) return;
+    body.style.opacity = '0'; body.style.transform = 'translateY(4px)';
+    setTimeout(() => { body.innerHTML = terminalCmds[os]; body.style.opacity='1'; body.style.transform='translateY(0)'; }, 130);
+  }
+
+  function copyCode() {
+    const body = $('#terminalBody');
+    if (!body) return;
+    const text = body.innerText;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(body));
+    } else { fallbackCopy(body); }
+  }
+  function fallbackCopy(node) {
+    const r = document.createRange(); r.selectNode(node);
+    window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+    try { document.execCommand('copy'); showToast(); } catch {}
+    window.getSelection().removeAllRanges();
+  }
+  function showToast() {
+    const t = $('#term-toast'), b = $('#copy-txt');
+    if (t) { t.style.display='block'; setTimeout(()=>{t.style.display='none';},2600); }
+    if (b) { b.textContent='Copied!'; setTimeout(()=>{b.textContent='Copy';},2400); }
+  }
+
+  // ================================================================
+  // ENV BUILDER 
+  // ================================================================
+
+  // ================================================================
+  // LOCK ICON → VIDEO MODAL → GITHUB
+  // ================================================================
+
+  (function() {
+    const modal   = $('#video-modal');
+    const video   = $('#lock-video');
+    const lockBtn = $('#lock-icon-btn');
+
+    function openModal() {
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+      }));
+      video.currentTime = 0;
+      video.play();
+    }
+
+    function closeModal() {
+      modal.style.opacity = '0';
+      setTimeout(() => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        video.pause();
+        video.currentTime = 0;
+      }, 400);
+    }
+
+    lockBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal();
+    });
+
+    // Prevent the parent anchor from navigating when lock icon is clicked
+    const brandLink = $('#nav-brand-link');
+    if (brandLink) {
+      brandLink.addEventListener('click', function(e) {
+        if (e.target.closest('#lock-icon-btn')) e.preventDefault();
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
+    });
+
+    video.addEventListener('ended', function() {
+      closeModal();
+      window.open('https://github.com/Cryptic-Mage/helucryptic', '_blank', 'noopener');
+    });
+  })();
+
+  // ================================================================
+  // LIVE ENCRYPTION DEMO + EASTER EGG
+  // ================================================================
+  (function() {
+    const input   = document.getElementById('demo-input');
+    const payload = document.getElementById('demo-payload');
+    const wrap    = document.getElementById('demo-output-wrap');
+    const arrow   = document.getElementById('demo-arrow');
+    if (!input || !payload) return;
+
+    const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const rnd      = () => B64[Math.floor(Math.random() * B64.length)];
+    const fakeToken = n => Array.from({length: n}, rnd).join('');
+
+    let scrambleRaf = null, settleTimer = null;
+
+    function stopAll() {
+      if (scrambleRaf) { cancelAnimationFrame(scrambleRaf); scrambleRaf = null; }
+      if (settleTimer)  { clearTimeout(settleTimer);          settleTimer  = null; }
+    }
+
+    function clearDemo() {
+      stopAll();
+      arrow && arrow.classList.remove('active');
+      wrap.classList.remove('has-content');
+      payload.classList.remove('sealed');
+      payload.textContent = 'start typing to seal a message…';
+    }
+
+    function startEncrypt(text) {
+      stopAll();
+      arrow && arrow.classList.add('active');
+      wrap.classList.add('has-content');
+      payload.classList.remove('sealed');
+
+      const tokenLen = 32 + Math.ceil(text.length * 1.8) + 43;
+      let current = fakeToken(tokenLen);
+
+      function scramble() {
+        current = current.split('').map(c => Math.random() < 0.28 ? rnd() : c).join('');
+        payload.textContent = current;
+        scrambleRaf = requestAnimationFrame(scramble);
+      }
+      scramble();
+
+      settleTimer = setTimeout(() => {
+        stopAll();
+        const nonce  = fakeToken(32);
+        const cipher = fakeToken(Math.max(24, Math.ceil(text.length * 1.8)));
+        const tag    = fakeToken(43);
+        payload.textContent = nonce + cipher + tag;
+        payload.classList.add('sealed');
+      }, 420);
+    }
+
+    // ── Easter egg ─────────�

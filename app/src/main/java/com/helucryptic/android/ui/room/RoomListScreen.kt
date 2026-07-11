@@ -228,7 +228,9 @@ class RoomListViewModel @Inject constructor(
     fun createRoom(onCreated: (String) -> Unit) {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         val rng = java.security.SecureRandom()
-        val code = (1..8).map { chars[rng.nextInt(chars.length)] }.joinToString("")
+        // ROOM-XXXX matches the desktop room-code format, so rooms created on
+        // Android can be joined (and invites redeemed) from the desktop client.
+        val code = "ROOM-" + (1..4).map { chars[rng.nextInt(chars.length)] }.joinToString("")
         val psk = ByteArray(32).also { rng.nextBytes(it) }
             .let { android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP) }
         viewModelScope.launch {

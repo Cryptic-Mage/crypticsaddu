@@ -30,6 +30,11 @@ class ConnectionManager @Inject constructor(
     private var currentRoom: String? = null
     private var peerCount   = 0
 
+    // Last NAT behaviour probe (best-effort; surfaced for diagnostics/UI). Tells
+    // us whether direct/hole-punch traversal can work or a relay is required.
+    @Volatile var natProfile: NatDiscovery.Profile? = null
+        private set
+
     init {
         // Initialize WebRTC factory (suspending — runs on IO scope)
         scope.launch { p2pManager.initialize() }
@@ -57,10 +62,45 @@ class ConnectionManager @Inject constructor(
         // P2P messages feed into the crypto engine (same path as relay messages)
         p2pManager.onMessage = { peer, json -> engine.onDataChannelMessage(peer, json) }
 
+        // Self-heal: when a P2P connection hard-fails, tear it down and (if we
+        // are the designated offerer by the username tie-break) re-offer after
+        // a short grace so both sides finish cleanup first. Messages keep
+        // flowing over the relay fallback in the meantime.
+        p2pManager.onPeerFailed = { peer ->
+            scope.launch {
+                p2pManager.close(peer)
+                delay(1_500)
+                val myName = identityStore.username ?: ""
+                if (myName.isNotEmpty() && myName < peer) {
+                    android.util.Log.i("ConnectionManager", "Re-offering P2P to $peer after failure")
+                    p2pManager.createOffer(peer)
+                }
+            }
+        }
+
         // Relay outbound E2EE frames
         engine.onSendRaw = { peer, json ->
             scope.launch {
                 signalingClient.send(SignalingMessage.forward(peer, "data_channel", json))
+            }
+        }
+
+        // Delivery receipt → flip the stored message to "delivered".
+        engine.onDelivery = { _, msgId ->
+            scope.launch { messageRepository.markDelivered(msgId) }
+        }
+
+        // Heartbeat says a peer's channel is dead → same self-heal as an ICE
+        // hard-failure (close + re-offer if we're the tie-break offerer).
+        engine.onPeerStale = { peer ->
+            scope.launch {
+                p2pManager.close(peer)
+                delay(1_500)
+                val myName = identityStore.username ?: ""
+                if (myName.isNotEmpty() && myName < peer) {
+                    android.util.Log.i("ConnectionManager", "Re-offering P2P to $peer after heartbeat timeout")
+                    p2pManager.createOffer(peer)
+                }
             }
         }
 
@@ -101,6 +141,10 @@ class ConnectionManager @Inject constructor(
         val myUsername = identityStore.username ?: ""
         if (myUsername.isNotEmpty() && myUsername == creatorUsername) {
             roomManager.initAsCreator(myUsername)
+        } else if (creatorUsername.isNotEmpty() && creatorUsername != "unknown") {
+            // Member side: pin the creator as the only legitimate group_key
+            // sender (the engine enforces this).
+            roomManager.setCreator(creatorUsername)
         }
         connectSignaling(roomCode)
     }
@@ -123,6 +167,15 @@ class ConnectionManager @Inject constructor(
             val payload  = mapOf("username" to username, "iat" to Instant.now().toString())
             val token    = PasetoV4.sign(payload, identityStore.ed25519Priv ?: return@launch)
             signalingClient.connect(url, password, username, token, room)
+        }
+        // Probe NAT behaviour once per connect (off the main thread). Result is
+        // advisory: it tells the diagnostics/UI whether this network can do a
+        // direct connection or will fall back to the signaling relay.
+        scope.launch {
+            natProfile = runCatching { NatDiscovery.discover() }.getOrNull()
+            natProfile?.let {
+                android.util.Log.i("ConnectionManager", "NAT: ${it.type} — ${it.summary}")
+            }
         }
     }
 

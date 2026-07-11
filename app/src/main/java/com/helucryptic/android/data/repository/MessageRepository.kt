@@ -12,16 +12,19 @@ class MessageRepository @Inject constructor(private val dao: MessageDao) {
 
     fun observe(id: String): Flow<List<MessageEntity>> = dao.observe(id)
 
+    /** Save a message. Returns the row id so the caller can track delivery
+     *  (the same id is sent on the wire and echoed back in the peer's ack). */
     suspend fun save(
         roomOrPeerId: String,
         sender: String,
         ciphertext: String,
         plaintext: String?,
-        status: String = "sent"
-    ) {
+        status: String = "sent",
+        id: String = UUID.randomUUID().toString()
+    ): String {
         dao.upsert(
             MessageEntity(
-                id            = UUID.randomUUID().toString(),
+                id            = id,
                 roomOrPeerId  = roomOrPeerId,
                 sender        = sender,
                 ciphertext    = ciphertext,
@@ -30,7 +33,11 @@ class MessageRepository @Inject constructor(private val dao: MessageDao) {
                 status        = status
             )
         )
+        return id
     }
+
+    /** Mark a previously-sent message delivered (peer acknowledged receipt). */
+    suspend fun markDelivered(id: String) = dao.setStatus(id, "delivered")
 
     suspend fun clearCache(id: String) = dao.clearPlaintextCache(id)
 }

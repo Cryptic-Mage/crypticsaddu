@@ -24,4 +24,8 @@ interface MessageDao {
 
     @Query("UPDATE messages SET plaintextCache = NULL WHERE roomOrPeerId = :id")
     suspend fun clearPlaintextCache(id: String)
+
+    /** Flip a sent message to "delivered" when its peer acks it. */
+    @Query("UPDATE messages SET status = :status WHERE id = :id")
+    suspend fun setStatus(id: String, status: String)
 }

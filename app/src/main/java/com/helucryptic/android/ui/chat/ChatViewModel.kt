@@ -40,13 +40,19 @@ class ChatViewModel @Inject constructor(
         val text = inputText.trim()
         if (text.isEmpty()) return
         viewModelScope.launch {
-            engine.sendMessage(peerId, text)
+            // Persist FIRST with a known id (status "sent"); the engine sends the
+            // same id on the wire, and the peer's ack flips the row to
+            // "delivered" via ConnectionManager.onDelivery → markDelivered(id).
+            val id = java.util.UUID.randomUUID().toString()
             msgRepo.save(
                 roomOrPeerId = peerId,
                 sender       = identityStore.username ?: "",
                 ciphertext   = "encrypted",
-                plaintext    = text
+                plaintext    = text,
+                status       = "sent",
+                id           = id
             )
+            engine.sendMessage(peerId, text, id)
             inputText = ""
         }
     }

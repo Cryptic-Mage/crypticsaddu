@@ -144,12 +144,14 @@ class SignalingClient @Inject constructor(
     }
 
     fun send(json: String): Boolean {
-        val now = System.currentTimeMillis()
-        sendTimes.removeAll { now - it > 10_000L }
-        if (sendTimes.size >= 80) return false
-        sendTimes.addLast(now)
-        ws?.send(json)
-        return true
+        val socket = ws ?: return false   // was: silently "succeeded" with no socket
+        synchronized(sendTimes) {
+            val now = System.currentTimeMillis()
+            sendTimes.removeAll { now - it > 10_000L }
+            if (sendTimes.size >= 80) return false
+            sendTimes.addLast(now)
+        }
+        return socket.send(json)
     }
 
     fun disconnect() {
@@ -162,7 +164,10 @@ class SignalingClient @Inject constructor(
 
     private fun scheduleReconnect() {
         if (_state.value == SignalingState.DISCONNECTED) return
-        if (pendingRoom.isNullOrEmpty()) {
+        // Reconnect for rooms AND plain 1-to-1 sessions. Previously only rooms
+        // recovered — a dropped 1-to-1 session went silently dead until the
+        // user backed out and reconnected manually.
+        if (pendingUsername.isEmpty()) {
             _state.value = SignalingState.DISCONNECTED
             return
         }
