@@ -19,7 +19,7 @@ class P2PChannelManager @Inject constructor(
     private val initMutex = Mutex()
     // Multiple independent STUN providers so gathering still works if one is
     // blocked. An IPv6 path (gathered automatically when the device has a
-    // routable v6 address) means NO NAT at all — the biggest non-relay win.
+    // routable v6 address) means NO NAT at all - the biggest non-relay win.
     private var cachedIce: List<PeerConnection.IceServer> = listOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
@@ -36,7 +36,7 @@ class P2PChannelManager @Inject constructor(
     var onSendSignal:  ((peer: String, json: String) -> Unit)? = null
     /** Called when data channel transitions to OPEN. */
     var onChannelOpen: ((peer: String) -> Unit)? = null
-    /** Called when a peer connection FAILS — lets ConnectionManager self-heal. */
+    /** Called when a peer connection FAILS - lets ConnectionManager self-heal. */
     var onPeerFailed:  ((peer: String) -> Unit)? = null
 
     suspend fun initialize() = initMutex.withLock {
@@ -162,7 +162,7 @@ class P2PChannelManager @Inject constructor(
             }
             if (state == PeerConnection.IceConnectionState.FAILED) {
                 // Hard failure (DISCONNECTED can recover on its own; messages
-                // already fall back to the relay) — let the manager rebuild.
+                // already fall back to the relay) - let the manager rebuild.
                 onPeerFailed?.invoke(peer)
             }
         }

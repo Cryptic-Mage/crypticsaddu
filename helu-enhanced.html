@@ -37,7 +37,7 @@
   --border:   #2a2a2b;
   --text:     #f0f0ee;
   --t2:       #949490;   /* readable body / secondary text */
-  --t3:       #3e3e3c;   /* decorative only — dividers, comments, placeholders */
+  --t3:       #3e3e3c;   /* decorative only - dividers, comments, placeholders */
   --gold:     #c9a96e;
   --gold-mid: rgba(201,169,110,0.3);
   --gold-dim: rgba(201,169,110,0.09);
@@ -49,7 +49,7 @@
   --ic-p:#c9a96e; --ic-k:#4ade80; --ic-sig:rgba(201,169,110,.5);
 }
 
-/* Light — Clean White + Electric Blue */
+/* Light - Clean White + Electric Blue */
 [data-theme="light"] {
   --bg:       #ffffff;
   --s1:       #f8fafc;
@@ -233,7 +233,7 @@ canvas,img,svg{display:block}
 .btn-outline:hover{color:var(--text);border-color:var(--t2)}
 
 /* ================================================================
-   HERO — static, no canvas
+   HERO - static, no canvas
 ================================================================ */
 .scene-hero{
   position:relative;
@@ -394,13 +394,13 @@ canvas,img,svg{display:block}
   opacity:.38;transition:opacity .3s ease,background .3s ease;
 }
 .arch-step:last-child{border-bottom:none}
-/* Light mode needs higher base opacity — dark text fades out faster */
+/* Light mode needs higher base opacity - dark text fades out faster */
 [data-theme="light"] .arch-step{opacity:.62}
 .arch-step.is-active{
   opacity:1;
   background:color-mix(in srgb,var(--gold-dim) 100%,var(--s1));
 }
-/* Mobile illustrations — hidden on desktop, revealed in media query */
+/* Mobile illustrations - hidden on desktop, revealed in media query */
 .arch-step__illo{display:none}
 .arch-step__num{
   font-family:var(--f-mno);font-size:8px;letter-spacing:.18em;
@@ -746,7 +746,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
 /* ================================================================
    ARCH MOBILE ILLUSTRATIONS
 ================================================================ */
-/* Node circles — solid fill = packets cleanly hide behind node edge */
+/* Node circles - solid fill = packets cleanly hide behind node edge */
 .illo-na{fill:var(--s2);stroke:var(--ic-a);stroke-width:1.5}
 .illo-nb{fill:var(--s2);stroke:var(--ic-b);stroke-width:1.5}
 .illo-ns{fill:var(--s2);stroke:var(--ic-s);stroke-width:1.5}
@@ -785,7 +785,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     display:block;padding:0 0 48px;
   }
   .arch-canvas-wrap{display:none}
-  .arch-mobile-card{display:none}   /* old dynamic card — no longer needed */
+  .arch-mobile-card{display:none}   /* old dynamic card - no longer needed */
   .arch-panel{
     display:flex;flex-direction:column;width:100%;
     border-top:none;border-left:none;
@@ -938,7 +938,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   .demo-arrow{transform:rotate(90deg)}
 }
 
-/* Cap card — diagonal shine on hover */
+/* Cap card - diagonal shine on hover */
 .cap{overflow:hidden;position:relative}
 .cap::after{
   content:'';position:absolute;
@@ -959,7 +959,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
 .cta-inner{position:relative;z-index:1}
 @keyframes cta-breathe{0%,100%{opacity:.5}50%{opacity:1}}
 
-/* Scramble — prevent layout shift on load */
+/* Scramble - prevent layout shift on load */
 .hero-headline{word-break:break-word;min-height:1em}
   </style>
 </head>
@@ -1017,7 +1017,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
             <span class="nav__gh-meta">
               <span id="gh-api-dot" style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--border);margin-right:4px;vertical-align:middle"></span>GitHub
             </span>
-            <span class="nav__gh-count">&#9733; <span id="github-stars">—</span> &nbsp;&#8910; <span id="github-forks">—</span></span>
+            <span class="nav__gh-count">&#9733; <span id="github-stars">-</span> &nbsp;&#8910; <span id="github-forks">-</span></span>
           </div>
         </a>
 
@@ -1032,7 +1032,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   <main>
 
     <!-- =====================================================
-         HERO — static, no canvas
+         HERO - static, no canvas
     ===================================================== -->
     <section class="scene-hero" id="hero" aria-label="Hero">
       <canvas id="hero-net" aria-hidden="true"></canvas>
@@ -1126,7 +1126,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     </section>
 
     <!-- =====================================================
-         PROTOCOL — scroll-driven architecture walkthrough
+         PROTOCOL - scroll-driven architecture walkthrough
     ===================================================== -->
     <section class="scene-arch" id="protocol" aria-label="Protocol walkthrough">
       <div class="scene-arch__pin">
@@ -1147,7 +1147,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
           </div>
 
           <div class="arch-step is-active" data-step="0">
-            <!-- Mobile illustration: two isolated nodes pulsing — no connection yet -->
+            <!-- Mobile illustration: two isolated nodes pulsing - no connection yet -->
             <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="50" cy="40" r="18" class="illo-na illo-pa"/>
               <line x1="43" y1="40" x2="57" y2="40" class="illo-ta"/>
@@ -1165,7 +1165,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
           </div>
 
           <div class="arch-step" data-step="1">
-            <!-- Mobile illustration: server.py routes SDP — dashed arcs, packet A→S→B and return -->
+            <!-- Mobile illustration: server.py routes SDP - dashed arcs, packet A→S→B and return -->
             <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="50" y1="55" x2="120" y2="18" class="illo-sg illo-df"/>
               <line x1="120" y1="18" x2="190" y2="55" class="illo-sg illo-df"/>
@@ -1209,7 +1209,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
           </div>
 
           <div class="arch-step" data-step="3">
-            <!-- Mobile illustration: X25519 ECDH — both peers send keys simultaneously; diamond = shared secret -->
+            <!-- Mobile illustration: X25519 ECDH - both peers send keys simultaneously; diamond = shared secret -->
             <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="68" y1="40" x2="172" y2="40" class="illo-wp"/>
               <circle r="3.5" class="illo-pp"><animateMotion path="M50,40 L190,40" dur="1.6s" repeatCount="indefinite"/></circle>
@@ -1231,7 +1231,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
           </div>
 
           <div class="arch-step" data-step="4">
-            <!-- Mobile illustration: PASETO v4 / XChaCha20 — green encrypted packets, lock at center -->
+            <!-- Mobile illustration: PASETO v4 / XChaCha20 - green encrypted packets, lock at center -->
             <div class="arch-step__illo" aria-hidden="true"><svg viewBox="0 0 240 88" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="68" y1="40" x2="172" y2="40" class="illo-wk"/>
               <circle r="3.5" class="illo-pk"><animateMotion path="M50,40 L190,40" dur="1.4s" repeatCount="indefinite"/></circle>
@@ -1493,8 +1493,8 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
           <p class="sec-body" style="margin-bottom:0">helucryptic is fully open source under Apache-2.0. Read the cryptographic implementation. Audit the signaling logic. Build from source.</p>
 
           <div class="oss-stats">
-            <div><div class="oss-num" id="gh-stars-lg">—</div><div class="oss-lbl">Stars</div></div>
-            <div><div class="oss-num" id="gh-forks-lg">—</div><div class="oss-lbl">Forks</div></div>
+            <div><div class="oss-num" id="gh-stars-lg">-</div><div class="oss-lbl">Stars</div></div>
+            <div><div class="oss-num" id="gh-forks-lg">-</div><div class="oss-lbl">Forks</div></div>
             <div><div class="oss-num" id="ver-oss">v1.0.6</div><div class="oss-lbl">Latest</div></div>
           </div>
 
@@ -1523,7 +1523,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       </div>
     </section>
 
-    <!-- Final CTA — distinct from OSS section above -->
+    <!-- Final CTA - distinct from OSS section above -->
     <section class="section-cta" aria-labelledby="cta-title">
       <div class="cta-inner reveal">
         <div class="eyebrow" style="text-align:center;margin-bottom:16px">Self-Hostable</div>
@@ -1612,7 +1612,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   const lerp  = (a, b, t) => a + (b - a) * t;
   const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
 
-  // Arch canvas state — declared here so applyTheme can safely reference them
+  // Arch canvas state - declared here so applyTheme can safely reference them
   let archCtx, archW, archH;
   let prevArchStep = -1;
 
@@ -1757,7 +1757,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       ctx.beginPath(); ctx.arc(cx, cy + 22, 6, 0, Math.PI * 2); ctx.fill();
       ctx.fillRect(cx - 3, cy + 22, 6, 11);
 
-      // Shackle — rotates open around left anchor
+      // Shackle - rotates open around left anchor
       ctx.globalAlpha = appear;
       ctx.strokeStyle = GOLD;
       ctx.lineWidth   = 3.5;
@@ -1773,7 +1773,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -28); ctx.stroke();
       // arc top
       ctx.beginPath(); ctx.arc(14, -28, 14, Math.PI, 0, false); ctx.stroke();
-      // right leg — shortens as it pulls up and out
+      // right leg - shortens as it pulls up and out
       const rightLeg = 28 * (1 - openAmt * 0.55);
       ctx.beginPath(); ctx.moveTo(28, -28); ctx.lineTo(28, -28 + rightLeg); ctx.stroke();
       ctx.restore();
@@ -2049,7 +2049,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   }
 
   // ================================================================
-  // ARCH — SCROLL-DRIVEN
+  // ARCH - SCROLL-DRIVEN
   // ================================================================
 
   const ARCH_STEPS_DATA = [
@@ -2069,7 +2069,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   }
 
   function resizeArchCanvas() {
-    initArchCanvas(); // always reinit — avoids stale scale on resized context
+    initArchCanvas(); // always reinit - avoids stale scale on resized context
   }
 
   function renderArch(progress) {
@@ -2244,7 +2244,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     });
   });
 
-  // Debounced resize handler — avoids the immediate-fire issue of ResizeObserver
+  // Debounced resize handler - avoids the immediate-fire issue of ResizeObserver
   let _archResizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(_archResizeTimer);
@@ -2498,4 +2498,4 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       }, 420);
     }
 
-    // ── Easter egg ─────────�
+    // ── Easter egg ─────────�

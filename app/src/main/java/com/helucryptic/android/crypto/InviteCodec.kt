@@ -12,7 +12,7 @@ import java.security.MessageDigest
  *   m=1 (ephemeral?), h=sha256(canonical JSON sans h)[:16] hex.
  *
  * The checksum is computed over the payload serialised EXACTLY like Python's
- * `json.dumps(payload, sort_keys=True, separators=(",", ":"))` — so the
+ * `json.dumps(payload, sort_keys=True, separators=(",", ":"))` - so the
  * canonical serialiser below sorts keys and emits no whitespace. All field
  * values are ASCII (base64 / URLs / room codes), so no unicode escaping is
  * needed for parity.
@@ -126,7 +126,7 @@ object InviteCodec {
     /**
      * Serialise like Python `json.dumps(d, sort_keys=True, separators=(",",":"))`.
      * NOTE: org.json's JSONObject.toString() escapes '/' as '\/' and does not
-     * sort keys, which would break checksum parity — hence this manual emitter.
+     * sort keys, which would break checksum parity - hence this manual emitter.
      */
     private fun canonicalJson(fields: Map<String, Any>): String =
         fields.entries.joinToString(",", prefix = "{", postfix = "}") { (k, v) ->

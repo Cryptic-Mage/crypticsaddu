@@ -49,7 +49,7 @@ class RoomManager @Inject constructor(private val crypto: CryptoManager) {
             val next = joinOrder.firstOrNull() ?: return false
             roomCreator = next
             if (next == myUsername) {
-                // KEEP the existing group key if we already hold one — generating
+                // KEEP the existing group key if we already hold one - generating
                 // a fresh key here split the room: peers that already had the old
                 // key ignored the re-broadcast and could no longer decrypt the
                 // promoted creator's messages. Only generate when orphaned
@@ -77,7 +77,7 @@ class RoomManager @Inject constructor(private val crypto: CryptoManager) {
     }
 
     /**
-     * HMAC-SHA256(key=base64decode(psk), msg="nonce|roomId|responder") — hex.
+     * HMAC-SHA256(key=base64decode(psk), msg="nonce|roomId|responder") - hex.
      *
      * Wire-compatible with desktop webrtc_engine._psk_proof():
      *  - the PSK is a base64-encoded 32-byte key and must be DECODED before

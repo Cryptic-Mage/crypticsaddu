@@ -173,11 +173,11 @@ fun PulsingDot(state: SignalingState) {
         else -> 1f
     }
     val color = when (state) {
-        SignalingState.CONNECTED    -> DarkSuccess                           // green  — peer in room
-        SignalingState.SIGNALING    -> Color(0xFF4488FF)                     // blue   — on relay, idle
+        SignalingState.CONNECTED    -> DarkSuccess                           // green  - peer in room
+        SignalingState.SIGNALING    -> Color(0xFF4488FF)                     // blue   - on relay, idle
         SignalingState.CONNECTING,
-        SignalingState.RECONNECTING -> Color(0xFFFFAA00)                     // amber  — in-flight
-        SignalingState.DISCONNECTED -> MaterialTheme.colorScheme.outline     // grey   — offline
+        SignalingState.RECONNECTING -> Color(0xFFFFAA00)                     // amber  - in-flight
+        SignalingState.DISCONNECTED -> MaterialTheme.colorScheme.outline     // grey   - offline
     }
     Box(
         modifier = Modifier

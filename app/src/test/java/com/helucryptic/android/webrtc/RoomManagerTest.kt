@@ -25,7 +25,7 @@ class RoomManagerTest {
 
     @Test
     fun `promotion keeps an existing group key (no room split)`() {
-        // bob already holds the room key when the creator leaves — promotion
+        // bob already holds the room key when the creator leaves - promotion
         // must NOT regenerate it, or the remaining members (still on the old
         // key) could no longer decrypt bob's messages.
         rm.initAsCreator("alice")            // gives this instance a key
@@ -61,7 +61,7 @@ class RoomManagerTest {
     @Test
     fun `proof is bound to the responder identity (anti-reflection)`() {
         // A proof produced by alice answering a challenge can never satisfy a
-        // verifier expecting mallory as the responder — this is what stops an
+        // verifier expecting mallory as the responder - this is what stops an
         // attacker reflecting alice's own nonce back at her and replaying her
         // answer as their response.
         val asAlice   = rm.pskProof("NONCE", "room1", "c2VjcmV0", responder = "alice")

@@ -38,7 +38,7 @@ fun CallScreen(
                 Brush.verticalGradient(listOf(DarkBackground, Color.Black))
             )
     ) {
-        // PiP overlay — local camera placeholder
+        // PiP overlay - local camera placeholder
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -112,7 +112,7 @@ fun CallScreen(
 
             Spacer(Modifier.height(48.dp))
 
-            // 4-button row — 36dp icons, 8dp gaps, total ≤ 170dp
+            // 4-button row - 36dp icons, 8dp gaps, total ≤ 170dp
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment     = Alignment.CenterVertically

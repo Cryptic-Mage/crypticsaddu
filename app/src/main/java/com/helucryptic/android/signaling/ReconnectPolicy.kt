@@ -10,7 +10,7 @@ class ReconnectPolicy @Inject constructor() {
     fun nextDelayMs(): Long {
         // Clamp the shift: an unbounded `shl attempt` overflows Long after ~54
         // failures, producing negative delays that collapsed to the 100 ms
-        // floor — i.e. a long outage degenerated into hammering the server
+        // floor - i.e. a long outage degenerated into hammering the server
         // ten times a second. 2^6 s already exceeds maxMs.
         val exp    = (baseMs shl attempt.coerceAtMost(6)).coerceAtMost(maxMs)
         attempt++

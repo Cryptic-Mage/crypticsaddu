@@ -29,7 +29,7 @@
 # Keep DataStore preference keys
 -keepclassmembers class * extends androidx.datastore.preferences.core.Preferences$Key { *; }
 
-# Keep JSON-serialised fields (JSONObject used directly — no reflection needed)
+# Keep JSON-serialised fields (JSONObject used directly - no reflection needed)
 
 # Keep BuildConfig
 -keep class com.helucryptic.android.BuildConfig { *; }

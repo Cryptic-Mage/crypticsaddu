@@ -11,5 +11,5 @@ import javax.inject.Singleton
 object CryptoModule {
     @Provides @Singleton
     fun provideCryptoManager() = CryptoManager()
-    // IdentityStore uses @Inject constructor(@ApplicationContext) — Hilt auto-provides it.
+    // IdentityStore uses @Inject constructor(@ApplicationContext) - Hilt auto-provides it.
 }

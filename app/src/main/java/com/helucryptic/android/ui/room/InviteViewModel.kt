@@ -65,7 +65,7 @@ class InviteViewModel @Inject constructor(
                     creatorUsername = "unknown"
                 )
 
-                // Apply the invite's connection details — previously the scanned
+                // Apply the invite's connection details - previously the scanned
                 // URL was ignored, so an invite pointing at a different signaling
                 // server could never actually connect.
                 if (invite.signalingUrl.isNotBlank()) {

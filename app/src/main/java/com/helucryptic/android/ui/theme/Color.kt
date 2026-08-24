@@ -13,7 +13,7 @@ val DarkTextSecondary = Color(0xFF937870)
 val DarkSuccess       = Color(0xFFA8D5A2)
 val DarkDestructive   = Color(0xFFD94F3D)
 
-// Warm Light — amber/golden hue
+// Warm Light - amber/golden hue
 val LightBackground    = Color(0xFFFEFAF0)  // warm cream, yellow cast
 val LightSurface       = Color(0xFFFFF8E6)  // soft amber-white cards
 val LightSurfaceRaised = Color(0xFFF5E8C4)  // light honey raised surface

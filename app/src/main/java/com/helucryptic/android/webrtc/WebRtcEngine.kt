@@ -31,7 +31,7 @@ class WebRtcEngine @Inject constructor(
     private val _incoming = MutableSharedFlow<IncomingMessage>(extraBufferCapacity = 128)
     val incoming: SharedFlow<IncomingMessage> = _incoming
 
-    // Per-peer crypto state — ConcurrentHashMap for safe access across coroutines
+    // Per-peer crypto state - ConcurrentHashMap for safe access across coroutines
     private val sessionKeys   = ConcurrentHashMap<String, ByteArray>()
     private val myEphPriv     = ConcurrentHashMap<String, String>()
     private val helloVerified: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -81,7 +81,7 @@ class WebRtcEngine @Inject constructor(
         scope.launch { handleFrame(peer, text) }
     }
 
-    /** Called once the relay confirms a peer is present — starts PSK challenge or hello. */
+    /** Called once the relay confirms a peer is present - starts PSK challenge or hello. */
     fun onChannelOpen(peer: String) {
         scope.launch {
             if (roomPsk.isNotEmpty()) sendPskChallenge(peer)
@@ -103,7 +103,7 @@ class WebRtcEngine @Inject constructor(
 
     private suspend fun handlePskChallenge(peer: String, frame: JSONObject) {
         val nonce = frame.optString("nonce").takeIf { it.isNotEmpty() } ?: return
-        if (roomPsk.isEmpty()) return  // no PSK — can't respond (room not loaded yet)
+        if (roomPsk.isEmpty()) return  // no PSK - can't respond (room not loaded yet)
         // SECURITY: bind the proof to OUR room id (never an attacker-supplied
         // one) and to OUR username as the responder. The responder binding is
         // what defeats reflection: an attacker echoing our own nonce back as a
@@ -125,7 +125,7 @@ class WebRtcEngine @Inject constructor(
         // Verify against the PEER as responder (nonce is single-use: removed above).
         val expected = roomManager.pskProof(nonce, roomCode, roomPsk, responder = peer)
         if (!constantTimeEquals(proof, expected)) {
-            android.util.Log.w("WebRtcEngine", "PSK verification failed for $peer — rejecting")
+            android.util.Log.w("WebRtcEngine", "PSK verification failed for $peer - rejecting")
             return  // silently drop; peer can't participate
         }
         pskVerified.add(peer)
@@ -172,13 +172,13 @@ class WebRtcEngine @Inject constructor(
         val isKeyChange: Boolean
         when {
             storedKey == null -> {
-                // First contact — TOFU: trust the claimed key to verify the token,
+                // First contact - TOFU: trust the claimed key to verify the token,
                 // then pin it via onPeerReady → upsertFromHello.
                 verifyKey   = claimedPub
                 isKeyChange = false
             }
             storedKey == claimedPub -> {
-                // Known peer, key matches — normal path.
+                // Known peer, key matches - normal path.
                 verifyKey   = storedKey
                 isKeyChange = false
             }
@@ -186,7 +186,7 @@ class WebRtcEngine @Inject constructor(
                 // Stored key exists but differs from what this token claims.
                 // Treat as a key-change event and reject the session.
                 android.util.Log.w("WebRtcEngine",
-                    "Key change detected for $peer — stored≠claimed. Blocking session.")
+                    "Key change detected for $peer - stored≠claimed. Blocking session.")
                 onKeyChange?.invoke(peer)
                 return
             }
@@ -204,11 +204,11 @@ class WebRtcEngine @Inject constructor(
 
         // SECURITY: bind the claimed identity to the signaling peer name. A
         // peer connected as `peer` must not be able to assert a DIFFERENT
-        // username — that would poison another contact's pinned keys and let
+        // username - that would poison another contact's pinned keys and let
         // them impersonate that contact in stored history. (Desktop SEC check.)
         if (username != peer) {
             android.util.Log.w("WebRtcEngine",
-                "Hello username mismatch: signaling peer '$peer' claims '$username' — rejecting")
+                "Hello username mismatch: signaling peer '$peer' claims '$username' - rejecting")
             return
         }
 
@@ -217,14 +217,14 @@ class WebRtcEngine @Inject constructor(
         val iat = payload["iat"] as? String
         if (iat != null) {
             val fresh = runCatching {
-                // Desktop sends "…+00:00" (python isoformat), Android sends "…Z" —
+                // Desktop sends "…+00:00" (python isoformat), Android sends "…Z" -
                 // OffsetDateTime.parse accepts both; Instant.parse only the latter.
                 val ts = runCatching { java.time.OffsetDateTime.parse(iat).toInstant() }
                     .getOrElse { java.time.Instant.parse(iat) }
                 kotlin.math.abs(java.time.Duration.between(ts, java.time.Instant.now()).seconds) <= MAX_HELLO_SKEW_SECONDS
             }.getOrDefault(false)
             if (!fresh) {
-                android.util.Log.w("WebRtcEngine", "Stale/implausible hello timestamp from $peer — rejecting")
+                android.util.Log.w("WebRtcEngine", "Stale/implausible hello timestamp from $peer - rejecting")
                 return
             }
         }
@@ -276,7 +276,7 @@ class WebRtcEngine @Inject constructor(
     private fun handleGroupKey(peer: String, frame: JSONObject) {
         val sk = sessionKeys[peer] ?: return
         // SECURITY: once the room creator is known, only accept the group key
-        // from them — a non-creator member must not be able to race a key of
+        // from them - a non-creator member must not be able to race a key of
         // their choosing onto the room (matches desktop SEC-05). The creator
         // exception also covers legitimate re-keys after creator promotion.
         val creator = roomManager.roomCreator
@@ -350,7 +350,7 @@ class WebRtcEngine @Inject constructor(
             while (dq.size >= maxOutboxPerPeer) dq.removeFirst()
             dq.addLast(msgId to text)
         }
-        android.util.Log.i("WebRtcEngine", "$peer not ready — queued chat (outbox=${dq.size})")
+        android.util.Log.i("WebRtcEngine", "$peer not ready - queued chat (outbox=${dq.size})")
     }
 
     private fun flushOutbox(peer: String) {
@@ -422,11 +422,11 @@ class WebRtcEngine @Inject constructor(
             // SECURITY (PSK gate): in a PSK-protected room, NO identity or key
             // material is processed until the peer has proven the PSK. Without
             // this gate, anyone who knew the room code could send a hello,
-            // complete the key exchange, and be handed the group key —
+            // complete the key exchange, and be handed the group key -
             // bypassing the invite-only protection entirely.
             "hello"         -> {
                 if (roomPsk.isNotEmpty() && peer !in pskVerified) {
-                    android.util.Log.w("WebRtcEngine", "Dropping hello from $peer — PSK not yet proven")
+                    android.util.Log.w("WebRtcEngine", "Dropping hello from $peer - PSK not yet proven")
                     return
                 }
                 handleHello(peer, frame)
@@ -459,7 +459,7 @@ class WebRtcEngine @Inject constructor(
                         put("__type", "__ping"); put("ts", System.currentTimeMillis().toDouble())
                     }.toString())
                     if (now - (lastPong[peer] ?: now) > HEARTBEAT_DEAD_MS) {
-                        android.util.Log.w("WebRtcEngine", "$peer silent > ${HEARTBEAT_DEAD_MS}ms — stale, asking for heal")
+                        android.util.Log.w("WebRtcEngine", "$peer silent > ${HEARTBEAT_DEAD_MS}ms - stale, asking for heal")
                         lastPong[peer] = now   // avoid repeat-firing while healing
                         onPeerStale?.invoke(peer)
                     }

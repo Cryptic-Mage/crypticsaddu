@@ -36,7 +36,7 @@ class ConnectionManager @Inject constructor(
         private set
 
     init {
-        // Initialize WebRTC factory (suspending — runs on IO scope)
+        // Initialize WebRTC factory (suspending - runs on IO scope)
         scope.launch { p2pManager.initialize() }
 
         // After PSK + hello both verified: mark peer connected and initiate P2P as offerer
@@ -174,7 +174,7 @@ class ConnectionManager @Inject constructor(
         scope.launch {
             natProfile = runCatching { NatDiscovery.discover() }.getOrNull()
             natProfile?.let {
-                android.util.Log.i("ConnectionManager", "NAT: ${it.type} — ${it.summary}")
+                android.util.Log.i("ConnectionManager", "NAT: ${it.type} - ${it.summary}")
             }
         }
     }
@@ -212,7 +212,7 @@ class ConnectionManager @Inject constructor(
                             engine.onChannelOpen(peer)
                         }
                     }
-                    // "peer_left" as a Forward is never reached — the parser returns
+                    // "peer_left" as a Forward is never reached - the parser returns
                     // SignalingMessage.PeerLeft for that type, handled in the PeerLeft branch above.
                     "data_channel" -> {
                         val json = when (val d = message.data) {
@@ -223,7 +223,7 @@ class ConnectionManager @Inject constructor(
                         engine.onDataChannelMessage(message.sender, json)
                     }
 
-                    // WebRTC P2P signaling — relayed until the direct channel is open
+                    // WebRTC P2P signaling - relayed until the direct channel is open
                     "webrtc_offer" -> {
                         val sdp = (message.data as? JSONObject)?.optString("sdp") ?: return
                         p2pManager.handleOffer(message.sender, sdp)

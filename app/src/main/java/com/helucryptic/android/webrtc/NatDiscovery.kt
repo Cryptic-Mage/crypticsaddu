@@ -10,8 +10,8 @@ import java.security.SecureRandom
 
 /**
  * NAT behaviour discovery + port prediction (RFC 5780 / RFC 8489), the Kotlin
- * mirror of the desktop `nat_discovery.py`. Pure UDP sockets — no WebRTC
- * dependency — so it can run before the PeerConnectionFactory is up.
+ * mirror of the desktop `nat_discovery.py`. Pure UDP sockets - no WebRTC
+ * dependency - so it can run before the PeerConnectionFactory is up.
  *
  * Decides which non-relay traversal strategy can work:
  *  - endpoint-independent (cone) → STUN hole-punch works;
@@ -35,11 +35,11 @@ object NatDiscovery {
     ) {
         val needsRelay: Boolean get() = type == NatType.RANDOM_SYMMETRIC || type == NatType.BLOCKED
         val summary: String get() = when (type) {
-            NatType.OPEN_INTERNET        -> "Open / no NAT — direct works"
-            NatType.ENDPOINT_INDEPENDENT -> "Cone NAT — STUN hole-punch works"
-            NatType.SEQUENTIAL_SYMMETRIC -> "Symmetric NAT, sequential ports (Δ≈$portDelta) — prediction possible"
-            NatType.RANDOM_SYMMETRIC     -> "Symmetric NAT, random ports — relay required"
-            NatType.BLOCKED              -> "STUN blocked — relay required"
+            NatType.OPEN_INTERNET        -> "Open / no NAT - direct works"
+            NatType.ENDPOINT_INDEPENDENT -> "Cone NAT - STUN hole-punch works"
+            NatType.SEQUENTIAL_SYMMETRIC -> "Symmetric NAT, sequential ports (Δ≈$portDelta) - prediction possible"
+            NatType.RANDOM_SYMMETRIC     -> "Symmetric NAT, random ports - relay required"
+            NatType.BLOCKED              -> "STUN blocked - relay required"
             NatType.UNKNOWN              -> "Unknown"
         }
     }

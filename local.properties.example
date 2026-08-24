@@ -1,5 +1,5 @@
 # Copy to local.properties and fill in values.
-# local.properties is gitignored — never commit it.
+# local.properties is gitignored - never commit it.
 HELUCRYPTIC_SIGNALING_URL=
 HELUCRYPTIC_SERVER_PASSWORD=
 HELUCRYPTIC_TURN_URL=

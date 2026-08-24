@@ -119,7 +119,7 @@ class SignalingClient @Inject constructor(
             val code = response?.code
             if (code == 401 || code == 403) {
                 scope.launch {
-                    _lastError.emit("Authentication failed — check your server password (HTTP $code)")
+                    _lastError.emit("Authentication failed - check your server password (HTTP $code)")
                 }
                 generation++
                 _state.value = SignalingState.DISCONNECTED
@@ -129,7 +129,7 @@ class SignalingClient @Inject constructor(
         }
 
         override fun onClosed(socket: WebSocket, code: Int, reason: String) {
-            if (myGen != generation) return   // stale close from a previous socket — ignore
+            if (myGen != generation) return   // stale close from a previous socket - ignore
             if (code == 1000) _state.value = SignalingState.DISCONNECTED
             else scheduleReconnect()
         }
@@ -165,7 +165,7 @@ class SignalingClient @Inject constructor(
     private fun scheduleReconnect() {
         if (_state.value == SignalingState.DISCONNECTED) return
         // Reconnect for rooms AND plain 1-to-1 sessions. Previously only rooms
-        // recovered — a dropped 1-to-1 session went silently dead until the
+        // recovered - a dropped 1-to-1 session went silently dead until the
         // user backed out and reconnected manually.
         if (pendingUsername.isEmpty()) {
             _state.value = SignalingState.DISCONNECTED

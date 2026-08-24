@@ -71,7 +71,7 @@ fun AppNavigation(startDestination: String) {
             navController    = nav,
             startDestination = startDestination,
             modifier         = Modifier.padding(padding),
-            // Default tab transitions — simple crossfade
+            // Default tab transitions - simple crossfade
             enterTransition  = { fadeIn(tween(220)) },
             exitTransition   = { fadeOut(tween(180)) },
             popEnterTransition  = { fadeIn(tween(220)) },
@@ -90,7 +90,7 @@ fun AppNavigation(startDestination: String) {
             composable(Screen.Contacts.route) { ContactsScreen(nav) }
             composable(Screen.Settings.route) { SettingsScreen(nav) }
 
-            // Push screens — horizontal slide
+            // Push screens - horizontal slide
             composable(
                 Screen.Chat.route,
                 enterTransition = pushEnter, exitTransition = pushExit,

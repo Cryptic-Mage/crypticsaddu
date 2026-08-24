@@ -44,7 +44,7 @@ class IdentityStore @Inject constructor(
         get() = prefs.getString(KEY_ED25519_PUB, null)
         set(v) = prefs.edit().putString(KEY_ED25519_PUB, v).apply()
 
-    /** True when all 5 fields are populated — identity is complete. */
+    /** True when all 5 fields are populated - identity is complete. */
     fun isInitialized(): Boolean =
         username != null && x25519Priv != null && x25519Pub != null &&
         ed25519Priv != null && ed25519Pub != null
